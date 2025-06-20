@@ -180,3 +180,5 @@ if __name__ == '__main__':
 # Implement multi-tenant experiment isolation [2025-06-12T15:25:25]
 
 # Implement multi-tenant experiment isolation [2025-06-16T14:35:30]
+
+# Update Docker compose for production deploy [2025-06-20T18:59:19]
