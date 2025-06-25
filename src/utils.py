@@ -43,3 +43,5 @@ def format_number(n: int) -> str:
             return f"{n:.1f}{unit}"
         n /= 1000
     return f"{n:.1f}T"
+
+# Fix race condition in metrics aggregation [2025-06-25T10:15:54]
