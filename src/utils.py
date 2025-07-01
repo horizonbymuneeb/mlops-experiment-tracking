@@ -45,3 +45,5 @@ def format_number(n: int) -> str:
     return f"{n:.1f}T"
 
 # Fix race condition in metrics aggregation [2025-06-25T10:15:54]
+
+# WIP: setting up PostgreSQL backend storage [2025-07-01T18:25:43]
