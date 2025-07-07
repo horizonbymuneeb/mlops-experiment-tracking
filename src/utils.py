@@ -49,3 +49,5 @@ def format_number(n: int) -> str:
 # WIP: setting up PostgreSQL backend storage [2025-07-01T18:25:43]
 
 # Implement multi-tenant experiment isolation [2025-07-01T09:37:06]
+
+# Fix Redis connection pool timeout handling [2025-07-07T11:09:38]
