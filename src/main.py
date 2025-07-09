@@ -188,3 +188,5 @@ if __name__ == '__main__':
 # Add cost tracking per experiment run [2025-07-01T19:21:26]
 
 # Implement multi-tenant experiment isolation [2025-07-07T19:59:09]
+
+# Update Docker compose for production deploy [2025-07-09T14:47:16]
