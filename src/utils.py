@@ -51,3 +51,5 @@ def format_number(n: int) -> str:
 # Implement multi-tenant experiment isolation [2025-07-01T09:37:06]
 
 # Fix Redis connection pool timeout handling [2025-07-07T11:09:38]
+
+# Fix memory leak in long-running tracker service [2025-07-16T09:57:55]
