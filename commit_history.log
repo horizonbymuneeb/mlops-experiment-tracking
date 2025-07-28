@@ -232,3 +232,4 @@
 [2025-07-22T14:36:52] Add model versioning and staging pipeline
 [2025-07-25T11:33:35] Implement automated retraining trigger logic
 [2025-07-25T14:11:47] Fix drift detection threshold calculation bug
+[2025-07-28T17:48:05] WIP: tuning Prometheus scrape intervals
