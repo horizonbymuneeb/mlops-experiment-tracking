@@ -59,3 +59,5 @@ def format_number(n: int) -> str:
 # Fix drift detection threshold calculation bug [2025-07-25T14:11:47]
 
 # WIP: tuning Prometheus scrape intervals [2025-07-28T17:48:05]
+
+# Update FastAPI prediction endpoint for v2 [2025-07-29T10:04:37]
