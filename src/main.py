@@ -206,3 +206,5 @@ if __name__ == '__main__':
 # Update FastAPI prediction endpoint for v2 [2025-07-29T17:22:49]
 
 # Implement automated retraining trigger logic [2025-07-29T19:04:45]
+
+# Add experiment comparison dashboard API [2025-07-31T20:18:24]
