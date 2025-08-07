@@ -208,3 +208,5 @@ if __name__ == '__main__':
 # Implement automated retraining trigger logic [2025-07-29T19:04:45]
 
 # Add experiment comparison dashboard API [2025-07-31T20:18:24]
+
+# Implement model registry with stage transitions [2025-08-07T13:15:00]
