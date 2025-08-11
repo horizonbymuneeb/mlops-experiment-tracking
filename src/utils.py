@@ -63,3 +63,5 @@ def format_number(n: int) -> str:
 # Update FastAPI prediction endpoint for v2 [2025-07-29T10:04:37]
 
 # Implement multi-tenant experiment isolation [2025-08-11T19:45:07]
+
+# Implement Prometheus metrics collector service [2025-08-11T19:25:55]
