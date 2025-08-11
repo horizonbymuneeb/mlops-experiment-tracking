@@ -210,3 +210,5 @@ if __name__ == '__main__':
 # Add experiment comparison dashboard API [2025-07-31T20:18:24]
 
 # Implement model registry with stage transitions [2025-08-07T13:15:00]
+
+# Fix race condition in metrics aggregation [2025-08-11T12:41:04]
