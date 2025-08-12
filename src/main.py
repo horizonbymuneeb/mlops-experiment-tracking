@@ -212,3 +212,5 @@ if __name__ == '__main__':
 # Implement model registry with stage transitions [2025-08-07T13:15:00]
 
 # Fix race condition in metrics aggregation [2025-08-11T12:41:04]
+
+# WIP: setting up PostgreSQL backend storage [2025-08-12T20:45:49]
