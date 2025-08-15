@@ -65,3 +65,5 @@ def format_number(n: int) -> str:
 # Implement multi-tenant experiment isolation [2025-08-11T19:45:07]
 
 # Implement Prometheus metrics collector service [2025-08-11T19:25:55]
+
+# Add cost tracking per experiment run [2025-08-15T18:41:14]
