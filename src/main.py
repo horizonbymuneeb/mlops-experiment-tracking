@@ -216,3 +216,5 @@ if __name__ == '__main__':
 # WIP: setting up PostgreSQL backend storage [2025-08-12T20:45:49]
 
 # Add MLflow experiment wrapper with tags support [2025-08-17T18:21:40]
+
+# Update FastAPI prediction endpoint for v2 [2025-08-17T17:40:41]
