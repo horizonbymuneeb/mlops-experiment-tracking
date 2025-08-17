@@ -214,3 +214,5 @@ if __name__ == '__main__':
 # Fix race condition in metrics aggregation [2025-08-11T12:41:04]
 
 # WIP: setting up PostgreSQL backend storage [2025-08-12T20:45:49]
+
+# Add MLflow experiment wrapper with tags support [2025-08-17T18:21:40]

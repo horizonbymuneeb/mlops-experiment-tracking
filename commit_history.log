@@ -244,3 +244,4 @@
 [2025-08-12T20:45:49] WIP: setting up PostgreSQL backend storage
 [2025-08-15T18:41:14] Add cost tracking per experiment run
 [2025-08-15T10:31:44] WIP: setting up PostgreSQL backend storage
+[2025-08-17T18:21:40] Add MLflow experiment wrapper with tags support
