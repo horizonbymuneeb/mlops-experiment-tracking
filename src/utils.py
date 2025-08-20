@@ -69,3 +69,5 @@ def format_number(n: int) -> str:
 # Add cost tracking per experiment run [2025-08-15T18:41:14]
 
 # WIP: setting up PostgreSQL backend storage [2025-08-15T10:31:44]
+
+# Add model versioning and staging pipeline [2025-08-20T14:15:38]

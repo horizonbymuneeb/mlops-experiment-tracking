@@ -246,3 +246,4 @@
 [2025-08-15T10:31:44] WIP: setting up PostgreSQL backend storage
 [2025-08-17T18:21:40] Add MLflow experiment wrapper with tags support
 [2025-08-17T17:40:41] Update FastAPI prediction endpoint for v2
+[2025-08-20T14:15:38] Add model versioning and staging pipeline
