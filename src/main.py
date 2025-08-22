@@ -220,3 +220,5 @@ if __name__ == '__main__':
 # Update FastAPI prediction endpoint for v2 [2025-08-17T17:40:41]
 
 # Implement model registry with stage transitions [2025-08-22T20:30:35]
+
+# Add cost tracking per experiment run [2025-08-22T19:15:30]
