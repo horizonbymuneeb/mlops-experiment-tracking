@@ -218,3 +218,5 @@ if __name__ == '__main__':
 # Add MLflow experiment wrapper with tags support [2025-08-17T18:21:40]
 
 # Update FastAPI prediction endpoint for v2 [2025-08-17T17:40:41]
+
+# Implement model registry with stage transitions [2025-08-22T20:30:35]

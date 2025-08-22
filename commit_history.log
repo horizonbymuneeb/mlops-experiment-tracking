@@ -247,3 +247,4 @@
 [2025-08-17T18:21:40] Add MLflow experiment wrapper with tags support
 [2025-08-17T17:40:41] Update FastAPI prediction endpoint for v2
 [2025-08-20T14:15:38] Add model versioning and staging pipeline
+[2025-08-22T20:30:35] Implement model registry with stage transitions
