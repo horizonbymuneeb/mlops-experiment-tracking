@@ -252,3 +252,4 @@
 [2025-08-27T18:28:03] Fix memory leak in long-running tracker service
 [2025-08-28T10:06:44] WIP: setting up PostgreSQL backend storage
 [2025-08-28T16:08:33] Add model versioning and staging pipeline
+[2025-08-28T13:06:36] Update Docker compose for production deploy
