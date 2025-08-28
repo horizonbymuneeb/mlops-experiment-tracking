@@ -222,3 +222,5 @@ if __name__ == '__main__':
 # Implement model registry with stage transitions [2025-08-22T20:30:35]
 
 # Add cost tracking per experiment run [2025-08-22T19:15:30]
+
+# WIP: setting up PostgreSQL backend storage [2025-08-28T10:06:44]

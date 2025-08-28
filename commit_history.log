@@ -250,3 +250,4 @@
 [2025-08-22T20:30:35] Implement model registry with stage transitions
 [2025-08-22T19:15:30] Add cost tracking per experiment run
 [2025-08-27T18:28:03] Fix memory leak in long-running tracker service
+[2025-08-28T10:06:44] WIP: setting up PostgreSQL backend storage
