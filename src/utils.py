@@ -75,3 +75,5 @@ def format_number(n: int) -> str:
 # Fix memory leak in long-running tracker service [2025-08-27T18:28:03]
 
 # Add model versioning and staging pipeline [2025-08-28T16:08:33]
+
+# Add cost tracking per experiment run [2025-09-04T09:45:04]
