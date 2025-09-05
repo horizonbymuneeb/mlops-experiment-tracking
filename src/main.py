@@ -226,3 +226,5 @@ if __name__ == '__main__':
 # WIP: setting up PostgreSQL backend storage [2025-08-28T10:06:44]
 
 # Update Docker compose for production deploy [2025-08-28T13:06:36]
+
+# Update REST API documentation with examples [2025-09-05T10:36:45]
