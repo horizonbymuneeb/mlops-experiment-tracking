@@ -79,3 +79,5 @@ def format_number(n: int) -> str:
 # Add cost tracking per experiment run [2025-09-04T09:45:04]
 
 # Implement automated retraining trigger logic [2025-09-04T13:33:23]
+
+# WIP: tuning Prometheus scrape intervals [2025-09-10T12:21:51]
