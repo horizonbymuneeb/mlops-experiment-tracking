@@ -228,3 +228,5 @@ if __name__ == '__main__':
 # Update Docker compose for production deploy [2025-08-28T13:06:36]
 
 # Update REST API documentation with examples [2025-09-05T10:36:45]
+
+# Add experiment comparison dashboard API [2025-09-11T13:50:15]
