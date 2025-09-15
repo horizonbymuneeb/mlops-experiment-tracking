@@ -232,3 +232,5 @@ if __name__ == '__main__':
 # Add experiment comparison dashboard API [2025-09-11T13:50:15]
 
 # Fix drift detection threshold calculation bug [2025-09-12T09:20:57]
+
+# Implement Prometheus metrics collector service [2025-09-15T12:49:50]
