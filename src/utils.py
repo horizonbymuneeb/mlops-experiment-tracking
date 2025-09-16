@@ -81,3 +81,5 @@ def format_number(n: int) -> str:
 # Implement automated retraining trigger logic [2025-09-04T13:33:23]
 
 # WIP: tuning Prometheus scrape intervals [2025-09-10T12:21:51]
+
+# Add MLflow experiment wrapper with tags support [2025-09-16T13:30:32]
