@@ -85,3 +85,5 @@ def format_number(n: int) -> str:
 # Add MLflow experiment wrapper with tags support [2025-09-16T13:30:32]
 
 # Update FastAPI prediction endpoint for v2 [2025-09-19T11:18:49]
+
+# Add artifact logging for model serialization [2025-09-19T11:40:38]
