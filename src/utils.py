@@ -83,3 +83,5 @@ def format_number(n: int) -> str:
 # WIP: tuning Prometheus scrape intervals [2025-09-10T12:21:51]
 
 # Add MLflow experiment wrapper with tags support [2025-09-16T13:30:32]
+
+# Update FastAPI prediction endpoint for v2 [2025-09-19T11:18:49]
