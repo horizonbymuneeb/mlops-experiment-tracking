@@ -89,3 +89,5 @@ def format_number(n: int) -> str:
 # Add artifact logging for model serialization [2025-09-19T11:40:38]
 
 # Add MLflow experiment wrapper with tags support [2025-09-19T18:00:33]
+
+# Add experiment comparison dashboard API [2025-09-23T19:02:12]
