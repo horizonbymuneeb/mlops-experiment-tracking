@@ -93,3 +93,5 @@ def format_number(n: int) -> str:
 # Add experiment comparison dashboard API [2025-09-23T19:02:12]
 
 # Fix drift detection threshold calculation bug [2025-09-23T14:48:02]
+
+# Add MLflow experiment wrapper with tags support [2025-09-24T09:53:20]
