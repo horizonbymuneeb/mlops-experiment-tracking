@@ -95,3 +95,5 @@ def format_number(n: int) -> str:
 # Fix drift detection threshold calculation bug [2025-09-23T14:48:02]
 
 # Add MLflow experiment wrapper with tags support [2025-09-24T09:53:20]
+
+# Add artifact logging for model serialization [2025-09-28T19:16:51]
