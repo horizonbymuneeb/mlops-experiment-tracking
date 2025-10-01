@@ -99,3 +99,5 @@ def format_number(n: int) -> str:
 # Add artifact logging for model serialization [2025-09-28T19:16:51]
 
 # Add experiment comparison dashboard API [2025-09-29T10:13:19]
+
+# WIP: tuning Prometheus scrape intervals [2025-10-01T09:40:28]
