@@ -242,3 +242,5 @@ if __name__ == '__main__':
 # Add monitoring alert webhooks for Slack [2025-09-29T11:00:21]
 
 # Add model versioning and staging pipeline [2025-09-30T14:27:50]
+
+# Add experiment comparison dashboard API [2025-10-07T15:27:59]
