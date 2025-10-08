@@ -244,3 +244,5 @@ if __name__ == '__main__':
 # Add model versioning and staging pipeline [2025-09-30T14:27:50]
 
 # Add experiment comparison dashboard API [2025-10-07T15:27:59]
+
+# Update FastAPI prediction endpoint for v2 [2025-10-08T17:13:35]
