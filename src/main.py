@@ -246,3 +246,5 @@ if __name__ == '__main__':
 # Add experiment comparison dashboard API [2025-10-07T15:27:59]
 
 # Update FastAPI prediction endpoint for v2 [2025-10-08T17:13:35]
+
+# Implement Prometheus metrics collector service [2025-10-18T19:38:48]
