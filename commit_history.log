@@ -281,3 +281,4 @@
 [2025-10-08T17:13:35] Update FastAPI prediction endpoint for v2
 [2025-10-16T17:32:36] Update REST API documentation with examples
 [2025-10-18T19:38:48] Implement Prometheus metrics collector service
+[2025-10-22T11:15:45] Implement A/B testing framework for models
