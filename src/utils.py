@@ -111,3 +111,5 @@ def format_number(n: int) -> str:
 # Update REST API documentation with examples [2025-10-16T17:32:36]
 
 # Implement A/B testing framework for models [2025-10-22T11:15:45]
+
+# Implement model registry with stage transitions [2025-10-25T09:24:33]
