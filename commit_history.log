@@ -289,3 +289,4 @@
 [2025-11-04T18:18:04] Implement multi-tenant experiment isolation
 [2025-11-04T16:35:41] Update FastAPI prediction endpoint for v2
 [2025-11-05T15:10:43] Implement automated retraining trigger logic
+[2025-11-05T17:12:59] Update REST API documentation with examples
