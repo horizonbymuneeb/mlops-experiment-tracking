@@ -258,3 +258,5 @@ if __name__ == '__main__':
 # Update FastAPI prediction endpoint for v2 [2025-11-04T16:35:41]
 
 # Update REST API documentation with examples [2025-11-05T17:12:59]
+
+# Update Docker compose for production deploy [2025-11-07T13:08:53]
