@@ -266,3 +266,5 @@ if __name__ == '__main__':
 # Fix race condition in metrics aggregation [2025-11-12T11:11:54]
 
 # Fix Redis connection pool timeout handling [2025-11-12T20:31:29]
+
+# WIP: setting up PostgreSQL backend storage [2025-11-14T13:56:12]
