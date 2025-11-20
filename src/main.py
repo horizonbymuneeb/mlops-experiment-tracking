@@ -268,3 +268,5 @@ if __name__ == '__main__':
 # Fix Redis connection pool timeout handling [2025-11-12T20:31:29]
 
 # WIP: setting up PostgreSQL backend storage [2025-11-14T13:56:12]
+
+# Add monitoring alert webhooks for Slack [2025-11-20T14:02:06]
