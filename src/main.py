@@ -270,3 +270,5 @@ if __name__ == '__main__':
 # WIP: setting up PostgreSQL backend storage [2025-11-14T13:56:12]
 
 # Add monitoring alert webhooks for Slack [2025-11-20T14:02:06]
+
+# WIP: tuning Prometheus scrape intervals [2025-11-21T12:22:38]
