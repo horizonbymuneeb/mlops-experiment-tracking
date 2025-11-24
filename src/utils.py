@@ -121,3 +121,5 @@ def format_number(n: int) -> str:
 # Update Docker compose for production deploy [2025-11-07T19:08:27]
 
 # Fix race condition in metrics aggregation [2025-11-18T18:38:29]
+
+# Add experiment comparison dashboard API [2025-11-24T15:09:30]
