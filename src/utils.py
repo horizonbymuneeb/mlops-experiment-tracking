@@ -123,3 +123,5 @@ def format_number(n: int) -> str:
 # Fix race condition in metrics aggregation [2025-11-18T18:38:29]
 
 # Add experiment comparison dashboard API [2025-11-24T15:09:30]
+
+# Add cost tracking per experiment run [2025-11-26T18:52:18]

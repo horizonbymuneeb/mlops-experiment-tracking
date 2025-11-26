@@ -300,3 +300,4 @@
 [2025-11-20T14:02:06] Add monitoring alert webhooks for Slack
 [2025-11-21T12:22:38] WIP: tuning Prometheus scrape intervals
 [2025-11-24T15:09:30] Add experiment comparison dashboard API
+[2025-11-26T18:52:18] Add cost tracking per experiment run
