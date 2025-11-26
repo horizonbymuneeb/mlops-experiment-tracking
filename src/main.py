@@ -272,3 +272,5 @@ if __name__ == '__main__':
 # Add monitoring alert webhooks for Slack [2025-11-20T14:02:06]
 
 # WIP: tuning Prometheus scrape intervals [2025-11-21T12:22:38]
+
+# Add experiment comparison dashboard API [2025-11-26T13:55:03]
