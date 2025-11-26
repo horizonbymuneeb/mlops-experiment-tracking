@@ -301,3 +301,4 @@
 [2025-11-21T12:22:38] WIP: tuning Prometheus scrape intervals
 [2025-11-24T15:09:30] Add experiment comparison dashboard API
 [2025-11-26T18:52:18] Add cost tracking per experiment run
+[2025-11-26T19:38:58] Update FastAPI prediction endpoint for v2

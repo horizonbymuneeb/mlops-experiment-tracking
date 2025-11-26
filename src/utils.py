@@ -125,3 +125,5 @@ def format_number(n: int) -> str:
 # Add experiment comparison dashboard API [2025-11-24T15:09:30]
 
 # Add cost tracking per experiment run [2025-11-26T18:52:18]
+
+# Update FastAPI prediction endpoint for v2 [2025-11-26T19:38:58]
