@@ -303,3 +303,4 @@
 [2025-11-26T18:52:18] Add cost tracking per experiment run
 [2025-11-26T19:38:58] Update FastAPI prediction endpoint for v2
 [2025-11-26T13:55:03] Add experiment comparison dashboard API
+[2025-11-28T12:09:27] Fix memory leak in long-running tracker service

@@ -127,3 +127,5 @@ def format_number(n: int) -> str:
 # Add cost tracking per experiment run [2025-11-26T18:52:18]
 
 # Update FastAPI prediction endpoint for v2 [2025-11-26T19:38:58]
+
+# Fix memory leak in long-running tracker service [2025-11-28T12:09:27]
