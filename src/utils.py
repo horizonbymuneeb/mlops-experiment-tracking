@@ -129,3 +129,5 @@ def format_number(n: int) -> str:
 # Update FastAPI prediction endpoint for v2 [2025-11-26T19:38:58]
 
 # Fix memory leak in long-running tracker service [2025-11-28T12:09:27]
+
+# Fix drift detection threshold calculation bug [2025-11-30T19:07:23]
