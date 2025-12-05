@@ -133,3 +133,5 @@ def format_number(n: int) -> str:
 # Fix drift detection threshold calculation bug [2025-11-30T19:07:23]
 
 # Fix memory leak in long-running tracker service [2025-12-02T17:03:52]
+
+# Implement Prometheus metrics collector service [2025-12-05T10:17:03]
