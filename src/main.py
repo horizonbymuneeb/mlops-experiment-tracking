@@ -276,3 +276,5 @@ if __name__ == '__main__':
 # Add experiment comparison dashboard API [2025-11-26T13:55:03]
 
 # Add cost tracking per experiment run [2025-12-08T14:46:38]
+
+# WIP: tuning Prometheus scrape intervals [2025-12-10T09:28:55]
