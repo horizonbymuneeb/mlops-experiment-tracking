@@ -137,3 +137,5 @@ def format_number(n: int) -> str:
 # Implement Prometheus metrics collector service [2025-12-05T10:17:03]
 
 # Fix race condition in metrics aggregation [2025-12-07T12:33:05]
+
+# Add cost tracking per experiment run [2025-12-13T13:49:30]
