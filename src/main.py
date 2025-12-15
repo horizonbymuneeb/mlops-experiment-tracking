@@ -278,3 +278,5 @@ if __name__ == '__main__':
 # Add cost tracking per experiment run [2025-12-08T14:46:38]
 
 # WIP: tuning Prometheus scrape intervals [2025-12-10T09:28:55]
+
+# Update FastAPI prediction endpoint for v2 [2025-12-15T20:14:25]
