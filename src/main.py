@@ -280,3 +280,5 @@ if __name__ == '__main__':
 # WIP: tuning Prometheus scrape intervals [2025-12-10T09:28:55]
 
 # Update FastAPI prediction endpoint for v2 [2025-12-15T20:14:25]
+
+# Add monitoring alert webhooks for Slack [2025-12-17T18:50:22]
