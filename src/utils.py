@@ -145,3 +145,5 @@ def format_number(n: int) -> str:
 # Add experiment comparison dashboard API [2025-12-18T20:55:35]
 
 # Add artifact logging for model serialization [2025-12-22T09:11:17]
+
+# Implement Prometheus metrics collector service [2025-12-22T16:02:19]
