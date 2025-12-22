@@ -143,3 +143,5 @@ def format_number(n: int) -> str:
 # Implement model registry with stage transitions [2025-12-14T11:19:21]
 
 # Add experiment comparison dashboard API [2025-12-18T20:55:35]
+
+# Add artifact logging for model serialization [2025-12-22T09:11:17]
