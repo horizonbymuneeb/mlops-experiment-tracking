@@ -147,3 +147,5 @@ def format_number(n: int) -> str:
 # Add artifact logging for model serialization [2025-12-22T09:11:17]
 
 # Implement Prometheus metrics collector service [2025-12-22T16:02:19]
+
+# Add cost tracking per experiment run [2025-12-30T11:53:43]
