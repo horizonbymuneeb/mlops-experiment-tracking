@@ -19,3 +19,30 @@ from pathlib import Path
 from typing import BinaryIO, Iterable
 
 CHUNK_SIZE = 1 << 20
+DEFAULT_HASH_ALGORITHM = "sha256"
+DIGEST_HEX = {"sha256": 64, "sha1": 40, "md5": 32}
+
+_MEDIA_TYPES: dict[str, str] = {
+    ".json": "application/json",
+    ".jsonl": "application/x-ndjson",
+    ".csv": "text/csv",
+    ".txt": "text/plain",
+    ".log": "text/plain",
+    ".md": "text/markdown",
+    ".yaml": "application/yaml",
+    ".yml": "application/yaml",
+    ".bin": "application/octet-stream",
+    ".pt": "application/octet-stream",
+    ".pth": "application/octet-stream",
+    ".npy": "application/octet-stream",
+    ".npz": "application/octet-stream",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".svg": "image/svg+xml",
+    ".pdf": "application/pdf",
+}
+
+
+class ArtifactError(RuntimeError):
+    """Base class for artifact store failures."""
