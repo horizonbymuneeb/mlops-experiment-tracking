@@ -46,3 +46,28 @@ _MEDIA_TYPES: dict[str, str] = {
 
 class ArtifactError(RuntimeError):
     """Base class for artifact store failures."""
+
+
+class ArtifactNotFound(ArtifactError, KeyError):
+    """Raised when a digest is not present in the store."""
+
+    def __str__(self) -> str:  # KeyError would add quotes
+        return self.args[0] if self.args else "artifact not found"
+
+
+@dataclass(frozen=True)
+class ArtifactRef:
+    """The result of storing a blob: what to record in the database."""
+
+    digest: str
+    size_bytes: int
+    media_type: str | None = None
+    deduplicated: bool = False
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "digest": self.digest,
+            "size_bytes": self.size_bytes,
+            "media_type": self.media_type,
+            "deduplicated": self.deduplicated,
+        }
