@@ -71,3 +71,33 @@ class ArtifactRef:
             "media_type": self.media_type,
             "deduplicated": self.deduplicated,
         }
+
+
+def new_hasher(algorithm: str = DEFAULT_HASH_ALGORITHM):
+    """Return a fresh hashlib object, rejecting unknown algorithms."""
+    if algorithm not in DIGEST_HEX:
+        raise ArtifactError(f"unsupported hash algorithm {algorithm!r}")
+    return hashlib.new(algorithm)
+
+
+def hash_bytes(data: bytes, algorithm: str = DEFAULT_HASH_ALGORITHM) -> str:
+    """Hex digest of ``data``."""
+    hasher = new_hasher(algorithm)
+    hasher.update(data)
+    return hasher.hexdigest()
+
+
+def hash_file(
+    path: str | Path, algorithm: str = DEFAULT_HASH_ALGORITHM, chunk_size: int = CHUNK_SIZE
+) -> tuple[str, int]:
+    """Hash a file without loading it into memory; returns ``(digest, size)``."""
+    hasher = new_hasher(algorithm)
+    size = 0
+    with open(path, "rb") as handle:
+        while True:
+            chunk = handle.read(chunk_size)
+            if not chunk:
+                break
+            size += len(chunk)
+            hasher.update(chunk)
+    return hasher.hexdigest(), size
