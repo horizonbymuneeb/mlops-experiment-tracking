@@ -101,3 +101,39 @@ def hash_file(
             size += len(chunk)
             hasher.update(chunk)
     return hasher.hexdigest(), size
+
+
+def infer_media_type(name: str) -> str | None:
+    """Guess a media type from a file name suffix."""
+    suffix = Path(name).suffix.lower()
+    return _MEDIA_TYPES.get(suffix)
+
+
+def validate_digest(digest: str, algorithm: str = DEFAULT_HASH_ALGORITHM) -> str:
+    """Reject digests that could escape the store directory or are malformed."""
+    expected = DIGEST_HEX.get(algorithm)
+    if expected is None:
+        raise ArtifactError(f"unsupported hash algorithm {algorithm!r}")
+    if not isinstance(digest, str) or len(digest) != expected:
+        raise ArtifactError(f"malformed {algorithm} digest: {digest!r}")
+    if any(ch not in "0123456789abcdef" for ch in digest):
+        raise ArtifactError(f"malformed {algorithm} digest: {digest!r}")
+    return digest
+
+
+def atomic_write_bytes(path: str | Path, data: bytes) -> Path:
+    """Write ``data`` to ``path`` atomically (temp file + ``os.replace``)."""
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    handle, temp_name = tempfile.mkstemp(dir=str(target.parent), prefix=".tmp-")
+    try:
+        with os.fdopen(handle, "wb") as fh:
+            fh.write(data)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(temp_name, target)
+    except BaseException:
+        if os.path.exists(temp_name):
+            os.unlink(temp_name)
+        raise
+    return target
