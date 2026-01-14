@@ -38,3 +38,6 @@ from tracker.run import RunNotFoundError, RunStateError, Tracker
 from tracker.schema import SCHEMA_VERSION, describe_schema, verify_schema
 
 DEFAULT_DB = "tracker.db"
+EXIT_OK = 0
+EXIT_ERROR = 1
+EXIT_USAGE = 2
