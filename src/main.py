@@ -292,3 +292,5 @@ if __name__ == '__main__':
 # Implement automated retraining trigger logic [2026-01-03T17:14:37]
 
 # Implement multi-tenant experiment isolation [2026-01-08T13:23:45]
+
+# WIP: tuning Prometheus scrape intervals [2026-01-14T14:10:46]
