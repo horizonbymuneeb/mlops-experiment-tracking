@@ -153,3 +153,5 @@ def format_number(n: int) -> str:
 # Fix memory leak in long-running tracker service [2025-12-31T18:26:19]
 
 # Update Docker compose for production deploy [2026-01-06T14:14:05]
+
+# Fix Redis connection pool timeout handling [2026-01-14T09:01:03]
