@@ -294,3 +294,5 @@ if __name__ == '__main__':
 # Implement multi-tenant experiment isolation [2026-01-08T13:23:45]
 
 # WIP: tuning Prometheus scrape intervals [2026-01-14T14:10:46]
+
+# WIP: setting up PostgreSQL backend storage [2026-01-22T13:50:58]
