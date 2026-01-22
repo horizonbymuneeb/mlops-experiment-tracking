@@ -1,0 +1,25 @@
+# Runtime tunables read by tracker.config.load_config().
+# Every value here has a default in src/tracker/config.py; the file only needs
+# to contain the keys you want to change.
+database:
+  path: tracker.db          # relative paths resolve against this file's directory
+  busy_timeout_ms: 5000     # how long SQLite waits for a lock before SQLITE_BUSY
+  journal_mode: WAL         # WAL lets readers run while a writer holds the lock
+  synchronous: NORMAL       # NORMAL is the safe WAL pairing; FULL fsyncs every commit
+
+artifacts:
+  directory: artifacts      # content-addressed blob store lives under here
+  hash_algorithm: sha256
+  verify_on_read: false     # re-hash blobs when reading them (slow, paranoid)
+
+metrics:
+  auto_step: true           # log_metric(step=None) uses max(step)+1 for that key
+  max_batch: 500            # log_metrics refuses more rows than this in one call
+
+runs:
+  allow_reopen: true        # resume_run() may reopen a finished run
+  default_notes: ""
+
+cli:
+  default_limit: 20
+  date_format: "%Y-%m-%d %H:%M"

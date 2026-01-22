@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mlops-experiment-tracking"
+version = "0.1.0"
+description = "A small SQLite-backed experiment tracker with run comparison, artifact dedup and a CLI"
+requires-python = ">=3.11"
+dependencies = ["PyYAML>=6.0,<7.0"]
+readme = "README.md"
+license = { text = "MIT" }
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4,<9.0"]
+
+[project.scripts]
+tracker = "tracker.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q"
+filterwarnings = ["error::DeprecationWarning:tracker.*"]

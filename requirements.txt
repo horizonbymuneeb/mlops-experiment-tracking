@@ -1,0 +1,4 @@
+# Runtime dependencies. The tracker itself is stdlib + PyYAML; SQLite ships
+# with Python. pytest is only needed to run the suite.
+PyYAML>=6.0,<7.0
+pytest>=7.4,<9.0
