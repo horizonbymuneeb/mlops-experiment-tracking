@@ -107,3 +107,50 @@ def build_parser() -> argparse.ArgumentParser:
     gc.set_defaults(func=cmd_gc)
 
     return parser
+
+
+def resolve_config(args: argparse.Namespace, *, allow_missing: bool = False) -> TrackerConfig:
+    """Load config from ``--config`` or the default file, then apply ``--db``.
+
+    ``allow_missing`` lets ``tracker init`` point at a config file that does not
+    exist yet: the defaults are used with that file's directory as the base so
+    the database and artifact paths land next to the config being created.
+    """
+    config_path = getattr(args, "config", None) or getattr(args, "global_config", None)
+    candidate = Path(config_path) if config_path else Path("config.yaml")
+    if config_path is not None and not candidate.is_file():
+        if not allow_missing:
+            raise ConfigError(f"config file not found: {candidate}")
+        config = TrackerConfig.from_mapping({}, base_dir=candidate.resolve().parent)
+    elif config_path is not None or candidate.is_file():
+        config = load_config(candidate)
+    else:
+        config = TrackerConfig()
+    db_override = getattr(args, "db", None) or getattr(args, "global_db", None)
+    if db_override:
+        from dataclasses import replace
+
+        config = replace(
+            config,
+            database=replace(config.database, path=str(Path(db_override).expanduser())),
+        )
+    return config
+
+
+def open_tracker(args: argparse.Namespace) -> Tracker:
+    """Construct a ``Tracker`` for the parsed arguments."""
+    return Tracker(config=resolve_config(args))
+
+
+def format_table(rows: Sequence[Sequence[Any]], headers: Sequence[str]) -> str:
+    """Render a simple left-aligned text table with a header rule."""
+    text_rows = [["" if cell is None else str(cell) for cell in row] for row in rows]
+    widths = [len(header) for header in headers]
+    for row in text_rows:
+        for index, cell in enumerate(row):
+            widths[index] = max(widths[index], len(cell))
+    lines = ["  ".join(header.ljust(widths[index]) for index, header in enumerate(headers)).rstrip()]
+    lines.append("  ".join("-" * width for width in widths))
+    for row in text_rows:
+        lines.append("  ".join(cell.ljust(widths[index]) for index, cell in enumerate(row)).rstrip())
+    return "\n".join(lines)
