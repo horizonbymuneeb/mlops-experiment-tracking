@@ -296,3 +296,5 @@ if __name__ == '__main__':
 # WIP: tuning Prometheus scrape intervals [2026-01-14T14:10:46]
 
 # WIP: setting up PostgreSQL backend storage [2026-01-22T13:50:58]
+
+# Implement model registry with stage transitions [2026-01-26T16:29:14]
