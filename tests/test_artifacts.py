@@ -33,3 +33,24 @@ def test_hash_bytes_algorithm_selection():
 def test_hash_bytes_unknown_algorithm():
     with pytest.raises(ArtifactError, match="unsupported hash algorithm"):
         hash_bytes(b"x", "crc32")
+
+
+def test_hash_file_matches_hash_bytes(tmp_path):
+    path = tmp_path / "blob.bin"
+    payload = b"x" * 5000
+    path.write_bytes(payload)
+    digest, size = hash_file(path, chunk_size=1024)
+    assert digest == hash_bytes(payload)
+    assert size == 5000
+
+
+def test_hash_file_chunk_size_does_not_change_digest(tmp_path):
+    path = tmp_path / "blob.bin"
+    path.write_bytes(b"abcdef" * 1000)
+    assert hash_file(path, chunk_size=1)[0] == hash_file(path, chunk_size=10_000)[0]
+
+
+def test_infer_media_type():
+    assert infer_media_type("model.pt") == "application/octet-stream"
+    assert infer_media_type("metrics.CSV") == "text/csv"
+    assert infer_media_type("notes.unknown-ext") is None

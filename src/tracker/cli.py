@@ -267,3 +267,35 @@ def cmd_show(args: argparse.Namespace) -> int:
         for artifact in detail["artifacts"]:
             print(f"  {artifact['name']:24s} {artifact['size_bytes']:8d} B  {artifact['digest'][:12]}")
     return EXIT_OK
+
+
+def cmd_compare(args: argparse.Namespace) -> int:
+    """Compare runs and print the best run per metric."""
+    tracker = open_tracker(args)
+    comparison = compare_runs(
+        tracker.db, args.runs, metric_keys=args.metrics, direction=args.direction
+    )
+    if getattr(args, "global_json", False):
+        print(json.dumps(comparison.to_dict(), indent=2, sort_keys=True))
+        return EXIT_OK
+    print(format_comparison(comparison, date_format=tracker.config.cli.date_format))
+    return EXIT_OK
+
+
+def cmd_export(args: argparse.Namespace) -> int:
+    """Export runs to JSON or one of the CSV layouts."""
+    tracker = open_tracker(args)
+    out = Path(args.out)
+    run_ids = args.run_ids
+    if args.format == "json":
+        path = export_json_file(tracker.db, out, run_ids=run_ids)
+    elif args.format == "metrics-csv":
+        path = export_metrics_csv(tracker.db, out, run_ids)
+    elif args.format == "params-csv":
+        path = export_params_csv(tracker.db, out, run_ids)
+    elif args.format == "summary-csv":
+        path = export_summary_csv(tracker.db, out, run_ids)
+    else:
+        path = write_json(out, export_manifest(tracker.db))
+    print(f"wrote {path}")
+    return EXIT_OK
