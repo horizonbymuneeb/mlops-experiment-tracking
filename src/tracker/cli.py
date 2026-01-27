@@ -154,3 +154,29 @@ def format_table(rows: Sequence[Sequence[Any]], headers: Sequence[str]) -> str:
     for row in text_rows:
         lines.append("  ".join(cell.ljust(widths[index]) for index, cell in enumerate(row)).rstrip())
     return "\n".join(lines)
+
+
+def run_rows(db, records: Iterable[Any]) -> list[list[Any]]:
+    """Turn run records into table rows (params and metric counts included)."""
+    rows: list[list[Any]] = []
+    for record in records:
+        params = fetch_params(db, record.id)
+        metric_count = db.scalar(
+            "SELECT COUNT(*) FROM metrics WHERE run_id = ?", (record.id,), default=0
+        )
+        rows.append(
+            [
+                record.id,
+                record.name,
+                record.status,
+                record.started_at.replace("T", " ")[:16],
+                len(params),
+                metric_count,
+            ]
+        )
+    return rows
+
+
+def _print(args: argparse.Namespace, text: str) -> None:
+    if not getattr(args, "global_json", False):
+        print(text)
