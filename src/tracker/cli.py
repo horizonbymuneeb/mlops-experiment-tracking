@@ -180,3 +180,90 @@ def run_rows(db, records: Iterable[Any]) -> list[list[Any]]:
 def _print(args: argparse.Namespace, text: str) -> None:
     if not getattr(args, "global_json", False):
         print(text)
+
+
+def cmd_init(args: argparse.Namespace) -> int:
+    """Create the database (and config.yaml unless suppressed)."""
+    config = resolve_config(args, allow_missing=True)
+    db_path = config.db_path()
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    tracker = Tracker(config=config)
+    config_path = getattr(args, "config", None) or getattr(args, "global_config", None)
+    if not getattr(args, "no_config", False):
+        target = Path(config_path) if config_path else Path("config.yaml")
+        try:
+            write_default_config(target, overwrite=getattr(args, "force", False))
+        except ConfigError as exc:
+            print(f"config: {exc}", file=sys.stderr)
+    print(f"database: {db_path}")
+    print(f"artifacts: {tracker.store.root}")
+    print(f"schema version: {SCHEMA_VERSION}")
+    return EXIT_OK
+
+
+def cmd_list(args: argparse.Namespace) -> int:
+    """List runs matching the filters."""
+    tracker = open_tracker(args)
+    filt = RunFilter(
+        status=args.status,
+        name_like=args.name,
+        tags=args.tag or (),
+        order_by=args.order,
+        descending=args.descending,
+        limit=args.limit,
+        offset=args.offset,
+    )
+    records = query_runs(tracker.db, filt)
+    if getattr(args, "global_json", False):
+        payload = [record.to_dict() for record in records]
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return EXIT_OK
+    if not records:
+        print("no runs")
+        return EXIT_OK
+    table = format_table(run_rows(tracker.db, records), ["id", "name", "status", "started", "params", "metrics"])
+    print(table)
+    print(f"\n{len(records)} run(s), {count_runs(tracker.db, filt)} match the filter")
+    return EXIT_OK
+
+
+def cmd_show(args: argparse.Namespace) -> int:
+    """Show one run, optionally with every metric point."""
+    tracker = open_tracker(args)
+    run = tracker.get_run(args.run)
+    detail = run_detail(tracker.db, run.id)
+    if getattr(args, "global_json", False):
+        if not args.metrics:
+            detail.pop("metrics", None)
+        print(json.dumps(detail, indent=2, sort_keys=True))
+        return EXIT_OK
+    info = detail["run"]
+    print(f"run {info['id']}  {info['name']}")
+    print(f"  status     {info['status']}")
+    print(f"  started    {info['started_at']}")
+    print(f"  finished   {info['finished_at'] or '-'}")
+    duration = info["duration_seconds"]
+    print(f"  duration   {'-' if duration is None else f'{duration:.1f}s'}")
+    if info.get("host"):
+        print(f"  host       {info['host']}")
+    if detail["tags"]:
+        print(f"  tags       {', '.join(detail['tags'])}")
+    if info.get("notes"):
+        print(f"  notes      {info['notes']}")
+    if detail["params"]:
+        print("\nparams")
+        for key, value in detail["params"].items():
+            print(f"  {key:24s} {value!r}")
+    if detail["metrics"]:
+        print("\nmetrics")
+        for key, points in sorted(detail["metrics"].items()):
+            last_step, last_value = points[-1]
+            print(f"  {key:24s} {len(points):4d} point(s)  last={last_value:.6g} @ step {last_step}")
+            if args.metrics:
+                for step, value in points:
+                    print(f"      step {step:6d}  {value:.6g}")
+    if detail["artifacts"]:
+        print("\nartifacts")
+        for artifact in detail["artifacts"]:
+            print(f"  {artifact['name']:24s} {artifact['size_bytes']:8d} B  {artifact['digest'][:12]}")
+    return EXIT_OK
