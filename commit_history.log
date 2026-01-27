@@ -331,3 +331,4 @@
 [2026-01-18T13:03:31] Implement automated retraining trigger logic
 [2026-01-22T13:50:58] WIP: setting up PostgreSQL backend storage
 [2026-01-26T16:29:14] Implement model registry with stage transitions
+[2026-01-27T10:31:56] Implement Prometheus metrics collector service
