@@ -299,3 +299,55 @@ def cmd_export(args: argparse.Namespace) -> int:
         path = write_json(out, export_manifest(tracker.db))
     print(f"wrote {path}")
     return EXIT_OK
+
+
+def cmd_search(args: argparse.Namespace) -> int:
+    """Substring search over names and notes."""
+    tracker = open_tracker(args)
+    records = search_runs(tracker.db, args.text, limit=args.limit)
+    if getattr(args, "global_json", False):
+        print(json.dumps([record.to_dict() for record in records], indent=2, sort_keys=True))
+        return EXIT_OK
+    if not records:
+        print("no matches")
+        return EXIT_OK
+    print(format_table(run_rows(tracker.db, records), ["id", "name", "status", "started", "params", "metrics"]))
+    return EXIT_OK
+
+
+def cmd_schema(args: argparse.Namespace) -> int:
+    """Print the schema version, tables and any integrity problems."""
+    tracker = open_tracker(args)
+    with tracker.db.session() as conn:
+        problems = verify_schema(conn)
+        tables = describe_schema(conn)
+    if getattr(args, "global_json", False):
+        print(json.dumps({"version": SCHEMA_VERSION, "problems": problems, "tables": tables}, indent=2, sort_keys=True))
+        return EXIT_OK
+    print(f"schema version: {SCHEMA_VERSION}")
+    for table, columns in tables.items():
+        print(f"  {table:12s} {len(columns):2d} column(s): {', '.join(col['name'] for col in columns)}")
+    if problems:
+        print("\nproblems:")
+        for problem in problems:
+            print(f"  - {problem}")
+        return EXIT_ERROR
+    print("\nschema ok")
+    return EXIT_OK
+
+
+def cmd_gc(args: argparse.Namespace) -> int:
+    """Delete artifact blobs that no run references."""
+    tracker = open_tracker(args)
+    result = tracker.gc_artifacts(dry_run=args.dry_run)
+    if getattr(args, "global_json", False):
+        print(json.dumps(result, indent=2, sort_keys=True))
+        return EXIT_OK
+    verb = "would remove" if result["dry_run"] else "removed"
+    print(
+        f"{verb} {result['removed_count']} blob(s), "
+        f"{result['bytes_freed']} byte(s); kept {result['kept_count']} referenced digest(s)"
+    )
+    for digest in result["removed"]:
+        print(f"  {digest}")
+    return EXIT_OK
