@@ -54,3 +54,29 @@ def test_infer_media_type():
     assert infer_media_type("model.pt") == "application/octet-stream"
     assert infer_media_type("metrics.CSV") == "text/csv"
     assert infer_media_type("notes.unknown-ext") is None
+
+
+def test_validate_digest_rejects_bad_input():
+    for bad in ("", "zz", "A" * 64, "../" + "a" * 61, "a" * 63):
+        with pytest.raises(ArtifactError):
+            validate_digest(bad)
+
+
+def test_put_bytes_creates_sharded_object(store):
+    ref = store.put_bytes(b"hello", media_type="text/plain")
+    assert ref.digest == hash_bytes(b"hello")
+    assert ref.size_bytes == 5
+    assert ref.deduplicated is False
+    path = store.object_path(ref.digest)
+    assert path.parent.name == ref.digest[:2]
+    assert path.name == ref.digest[2:]
+    assert path.read_bytes() == b"hello"
+
+
+def test_put_bytes_twice_is_deduplicated(store):
+    first = store.put_bytes(b"same bytes")
+    second = store.put_bytes(b"same bytes")
+    assert first.digest == second.digest
+    assert first.deduplicated is False
+    assert second.deduplicated is True
+    assert len(store.list_objects()) == 1

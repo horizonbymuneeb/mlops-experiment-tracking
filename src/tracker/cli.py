@@ -351,3 +351,21 @@ def cmd_gc(args: argparse.Namespace) -> int:
     for digest in result["removed"]:
         print(f"  {digest}")
     return EXIT_OK
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """Entry point; returns a process exit code instead of raising."""
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    try:
+        return int(args.func(args))
+    except (ConfigError, QueryError, ComparisonError, ExportError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return EXIT_USAGE
+    except (RunNotFoundError, RunStateError, DatabaseError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return EXIT_ERROR
+
+
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(main())
