@@ -298,3 +298,5 @@ if __name__ == '__main__':
 # WIP: setting up PostgreSQL backend storage [2026-01-22T13:50:58]
 
 # Implement model registry with stage transitions [2026-01-26T16:29:14]
+
+# Add experiment comparison dashboard API [2026-02-01T14:03:14]
