@@ -10,3 +10,20 @@ The two non-obvious rules here:
   lowest run id. Comparing runs of different lengths on their best-ever value
   hides overfitting, so the default is the final value.
 """
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Iterable, Mapping, Sequence
+
+from tracker.db import Database
+from tracker.models import RunRecord, row_to_dict
+from tracker.query import (
+    QueryError,
+    fetch_metric_series,
+    fetch_params,
+    fetch_summary,
+    fetch_metric_keys,
+)
+
+DIRECTIONS = ("max", "min")

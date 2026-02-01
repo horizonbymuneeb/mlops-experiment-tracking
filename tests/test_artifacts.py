@@ -80,3 +80,27 @@ def test_put_bytes_twice_is_deduplicated(store):
     assert first.deduplicated is False
     assert second.deduplicated is True
     assert len(store.list_objects()) == 1
+
+
+def test_put_file_streams_and_dedups(store, tmp_path):
+    source = tmp_path / "checkpoint.bin"
+    source.write_bytes(b"\x00\x01\x02" * 1000)
+    first = store.put_file(source)
+    second = store.put_file(source)
+    assert first.size_bytes == 3000
+    assert first.media_type == "application/octet-stream"
+    assert second.deduplicated is True
+    assert store.read_bytes(first.digest) == source.read_bytes()
+
+
+def test_put_file_missing(store, tmp_path):
+    with pytest.raises(ArtifactError, match="not a file"):
+        store.put_file(tmp_path / "nope.bin")
+
+
+def test_put_stream(store):
+    ref = store.put_stream(io.BytesIO(b"streamed payload"))
+    assert store.read_bytes(ref.digest) == b"streamed payload"
+    again = store.put_stream(io.BytesIO(b"streamed payload"))
+    assert again.deduplicated is True
+    assert store.list_objects() == [ref.digest]
