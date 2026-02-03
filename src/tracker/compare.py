@@ -27,3 +27,17 @@ from tracker.query import (
 )
 
 DIRECTIONS = ("max", "min")
+
+
+class ComparisonError(ValueError):
+    """Raised when a comparison request is not well formed."""
+
+
+def normalize_direction(direction: str) -> str:
+    """Validate a direction string, returning the canonical lower-case form."""
+    if not isinstance(direction, str):
+        raise ComparisonError(f"direction must be a string, got {type(direction).__name__}")
+    text = direction.strip().lower()
+    if text not in DIRECTIONS:
+        raise ComparisonError(f"direction must be one of {DIRECTIONS}, got {direction!r}")
+    return text

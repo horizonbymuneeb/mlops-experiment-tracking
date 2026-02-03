@@ -104,3 +104,31 @@ def test_put_stream(store):
     again = store.put_stream(io.BytesIO(b"streamed payload"))
     assert again.deduplicated is True
     assert store.list_objects() == [ref.digest]
+
+
+def test_read_missing_raises_not_found(store):
+    missing = "0" * 64
+    with pytest.raises(ArtifactNotFound):
+        store.read_bytes(missing)
+    with pytest.raises(ArtifactNotFound):
+        store.open(missing)
+    with pytest.raises(ArtifactNotFound):
+        store.size(missing)
+
+
+def test_read_bytes_returns_exact_content(store):
+    payload = bytes(range(256))
+    ref = store.put_bytes(payload)
+    assert store.read_bytes(ref.digest) == payload
+    with store.open(ref.digest) as handle:
+        assert handle.read() == payload
+    assert store.size(ref.digest) == 256
+
+
+def test_verify_detects_corruption(store):
+    ref = store.put_bytes(b"trust me")
+    assert store.verify(ref.digest) is True
+    store.object_path(ref.digest).write_bytes(b"tampered")
+    assert store.verify(ref.digest) is False
+    with pytest.raises(ArtifactError, match="hash check"):
+        ArtifactStore(store.root, verify_on_read=True).read_bytes(ref.digest)
