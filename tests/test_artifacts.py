@@ -132,3 +132,26 @@ def test_verify_detects_corruption(store):
     assert store.verify(ref.digest) is False
     with pytest.raises(ArtifactError, match="hash check"):
         ArtifactStore(store.root, verify_on_read=True).read_bytes(ref.digest)
+
+
+def test_verify_missing_is_false(store):
+    assert store.verify("1" * 64) is False
+
+
+def test_list_objects_and_total_bytes(store):
+    a = store.put_bytes(b"a")
+    b = store.put_bytes(b"bb")
+    assert store.list_objects() == sorted([a.digest, b.digest])
+    assert store.total_bytes() == 3
+
+
+def test_garbage_collect_keeps_referenced(store):
+    keep = store.put_bytes(b"keep me")
+    drop = store.put_bytes(b"drop me")
+    result = store.garbage_collect([keep.digest])
+    assert result["removed"] == [drop.digest]
+    assert result["removed_count"] == 1
+    assert result["bytes_freed"] == len(b"drop me")
+    assert store.exists(keep.digest) is True
+    assert store.exists(drop.digest) is False
+    assert store.list_objects() == [keep.digest]
