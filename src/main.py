@@ -302,3 +302,5 @@ if __name__ == '__main__':
 # Add experiment comparison dashboard API [2026-02-01T14:03:14]
 
 # Add model versioning and staging pipeline [2026-02-03T20:59:30]
+
+# Implement model registry with stage transitions [2026-02-04T19:02:40]
