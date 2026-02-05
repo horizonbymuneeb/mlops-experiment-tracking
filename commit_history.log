@@ -339,3 +339,4 @@
 [2026-02-01T14:03:14] Add experiment comparison dashboard API
 [2026-02-03T20:59:30] Add model versioning and staging pipeline
 [2026-02-04T19:02:40] Implement model registry with stage transitions
+[2026-02-05T09:04:32] Update Docker compose for production deploy
