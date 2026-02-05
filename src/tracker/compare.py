@@ -129,3 +129,37 @@ def diff_params(left: Mapping[str, Any], right: Mapping[str, Any]) -> ParamDiff:
         key: left[key] for key in sorted(left_keys & right_keys) if left[key] == right[key]
     }
     return ParamDiff(left=0, right=0, added=added, removed=removed, changed=changed, common=common)
+
+
+def align_curves(
+    curves: Mapping[Any, Sequence[tuple[int, float]]]
+) -> list[dict[str, Any]]:
+    """Align several curves on the union of their steps.
+
+    Each output row is ``{"step": s, <curve key>: value or None}``. Steps are
+    sorted ascending and every curve appears in every row so the result can be
+    fed straight to a table renderer or a dataframe.
+    """
+    steps: set[int] = set()
+    lookup: dict[Any, dict[int, float]] = {}
+    for name, points in curves.items():
+        series = {int(step): float(value) for step, value in points}
+        lookup[name] = series
+        steps.update(series)
+    rows: list[dict[str, Any]] = []
+    for step in sorted(steps):
+        row: dict[str, Any] = {"step": step}
+        for name in curves:
+            row[name] = lookup[name].get(step)
+        rows.append(row)
+    return rows
+
+
+def latest_values(curves: Mapping[Any, Sequence[tuple[int, float]]]) -> dict[Any, float]:
+    """Final value of each curve (by highest step, not by list order)."""
+    out: dict[Any, float] = {}
+    for name, points in curves.items():
+        if not points:
+            continue
+        out[name] = float(max(points, key=lambda item: item[0])[1])
+    return out

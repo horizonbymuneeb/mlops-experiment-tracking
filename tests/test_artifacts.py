@@ -155,3 +155,25 @@ def test_garbage_collect_keeps_referenced(store):
     assert store.exists(keep.digest) is True
     assert store.exists(drop.digest) is False
     assert store.list_objects() == [keep.digest]
+
+
+def test_garbage_collect_dry_run(store):
+    drop = store.put_bytes(b"drop me")
+    result = store.garbage_collect([], dry_run=True)
+    assert result["dry_run"] is True
+    assert result["removed"] == [drop.digest]
+    assert store.exists(drop.digest) is True
+
+
+def test_garbage_collect_removes_empty_shards(store):
+    ref = store.put_bytes(b"only one")
+    store.garbage_collect([])
+    assert not store.object_path(ref.digest).parent.exists()
+
+
+def test_stats(store):
+    store.put_bytes(b"a")
+    stats = store.stats()
+    assert stats["object_count"] == 1
+    assert stats["total_bytes"] == 1
+    assert stats["hash_algorithm"] == "sha256"
