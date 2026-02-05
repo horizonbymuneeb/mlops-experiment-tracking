@@ -163,3 +163,105 @@ def latest_values(curves: Mapping[Any, Sequence[tuple[int, float]]]) -> dict[Any
             continue
         out[name] = float(max(points, key=lambda item: item[0])[1])
     return out
+
+
+def best_run(values: Mapping[int, float], direction: str = "max") -> int | None:
+    """Pick the run id with the best value under ``direction``.
+
+    Ties are broken by the lowest run id so repeated calls are stable.
+    """
+    mode = normalize_direction(direction)
+    if not values:
+        return None
+    chooser = max if mode == "max" else min
+    ordered = sorted(values.items())  # (run_id, value) ascending by id
+    best_id, best_value = ordered[0]
+    for run_id, value in ordered[1:]:
+        if chooser(value, best_value) == value and value != best_value:
+            best_id, best_value = run_id, value
+    return best_id
+
+
+def metric_table(
+    comparison: RunComparison, keys: Iterable[str] | None = None
+) -> list[list[str]]:
+    """Human readable rows: metric, one column per run, plus the winner."""
+    chosen = list(keys) if keys is not None else list(comparison.metric_keys)
+    header = ["metric"] + [f"run {run_id}" for run_id in comparison.run_ids] + ["best"]
+    rows = [header]
+    for key in chosen:
+        row = [key]
+        for run_id in comparison.run_ids:
+            value = comparison.latest.get(run_id, {}).get(key)
+            row.append("-" if value is None else f"{value:.6g}")
+        winner = comparison.best.get(key)
+        row.append("-" if winner is None else str(winner))
+        rows.append(row)
+    return rows
+
+
+def compare_runs(
+    db: Database,
+    run_ids: Sequence[int | str],
+    *,
+    metric_keys: Sequence[str] | None = None,
+    direction: str = "max",
+) -> RunComparison:
+    """Load ``run_ids`` and build a :class:`RunComparison`."""
+    if not run_ids:
+        raise ComparisonError("at least one run id is required")
+    mode = normalize_direction(direction)
+    resolved: list[int] = []
+    for ref in run_ids:
+        if isinstance(ref, bool) or not isinstance(ref, int):
+            raise ComparisonError(f"compare_runs needs integer ids, got {ref!r}")
+        resolved.append(int(ref))
+    if len(set(resolved)) != len(resolved):
+        raise ComparisonError("run ids must be unique")
+
+    params: dict[int, dict[str, Any]] = {}
+    metrics: dict[int, dict[str, list[tuple[int, float]]]] = {}
+    latest: dict[int, dict[str, float]] = {}
+    for run_id in resolved:
+        row = db.execute_one("SELECT * FROM runs WHERE id = ?", (run_id,))
+        if row is None:
+            raise ComparisonError(f"run {run_id} does not exist")
+        params[run_id] = fetch_params(db, run_id)
+        keys = list(metric_keys) if metric_keys is not None else fetch_metric_keys(db, run_id)
+        metrics[run_id] = {
+            key: fetch_metric_series(db, run_id, key) for key in keys
+        }
+        latest[run_id] = latest_values(metrics[run_id])
+
+    all_keys = sorted({key for per_run in metrics.values() for key in per_run})
+    best: dict[str, int] = {}
+    for key in all_keys:
+        values = {
+            run_id: per_run[key] for run_id, per_run in latest.items() if key in per_run
+        }
+        winner = best_run(values, mode)
+        if winner is not None:
+            best[key] = winner
+
+    param_diff = None
+    if len(resolved) == 2:
+        left_id, right_id = resolved
+        param_diff = diff_params(params[left_id], params[right_id])
+        param_diff = ParamDiff(
+            left=left_id,
+            right=right_id,
+            added=param_diff.added,
+            removed=param_diff.removed,
+            changed=param_diff.changed,
+            common=param_diff.common,
+        )
+
+    return RunComparison(
+        run_ids=tuple(resolved),
+        params=params,
+        metrics=metrics,
+        latest=latest,
+        best=best,
+        direction=mode,
+        param_diff=param_diff,
+    )
