@@ -265,3 +265,68 @@ def compare_runs(
         direction=mode,
         param_diff=param_diff,
     )
+
+
+def format_comparison(comparison: RunComparison, *, date_format: str = "%Y-%m-%d %H:%M") -> str:
+    """Render a comparison as plain text (used by ``tracker compare``)."""
+    lines: list[str] = []
+    lines.append("runs: " + ", ".join(str(run_id) for run_id in comparison.run_ids))
+    lines.append(f"direction: {comparison.direction}")
+    lines.append("")
+
+    if comparison.param_diff is not None:
+        diff = comparison.param_diff
+        lines.append(f"params (run {diff.left} -> run {diff.right}):")
+        if diff.is_empty:
+            lines.append("  identical")
+        for key, value in sorted(diff.added.items()):
+            lines.append(f"  + {key} = {value!r}")
+        for key, value in sorted(diff.removed.items()):
+            lines.append(f"  - {key} (was {value!r})")
+        for key, (before, after) in sorted(diff.changed.items()):
+            lines.append(f"  ~ {key}: {before!r} -> {after!r}")
+        lines.append("")
+
+    lines.append("metrics (latest value):")
+    for row in metric_table(comparison):
+        lines.append("  " + "  ".join(cell.rjust(12) if index else cell.ljust(16) for index, cell in enumerate(row)))
+    return "\n".join(lines)
+
+
+def aggregate_metric(
+    db: Database, run_ids: Sequence[int], key: str, reducer: str = "mean"
+) -> float | None:
+    """Aggregate the latest value of ``key`` across runs.
+
+    ``reducer`` is one of ``mean``, ``min``, ``max``, ``median``. Returns
+    ``None`` when no run logged the metric.
+    """
+    if reducer not in ("mean", "min", "max", "median"):
+        raise ComparisonError(f"unknown reducer {reducer!r}")
+    values: list[float] = []
+    for run_id in run_ids:
+        points = fetch_metric_series(db, run_id, key)
+        if points:
+            values.append(float(max(points, key=lambda item: item[0])[1]))
+    if not values:
+        return None
+    if reducer == "mean":
+        return sum(values) / len(values)
+    if reducer == "min":
+        return min(values)
+    if reducer == "max":
+        return max(values)
+    ordered = sorted(values)
+    middle = len(ordered) // 2
+    if len(ordered) % 2:
+        return ordered[middle]
+    return (ordered[middle - 1] + ordered[middle]) / 2.0
+
+
+def summarize_params(runs: Sequence[RunRecord], db: Database) -> dict[str, set[Any]]:
+    """Map every param key to the set of values seen across ``runs``."""
+    seen: dict[str, set[Any]] = {}
+    for run in runs:
+        for key, value in fetch_params(db, run.id).items():
+            seen.setdefault(key, set()).add(value)
+    return seen

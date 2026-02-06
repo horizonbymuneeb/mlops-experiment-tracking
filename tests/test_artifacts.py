@@ -177,3 +177,17 @@ def test_stats(store):
     assert stats["object_count"] == 1
     assert stats["total_bytes"] == 1
     assert stats["hash_algorithm"] == "sha256"
+
+
+def test_atomic_write_bytes_creates_parents(tmp_path):
+    target = tmp_path / "deep" / "dir" / "file.bin"
+    atomic_write_bytes(target, b"data")
+    assert target.read_bytes() == b"data"
+    assert not list(target.parent.glob(".tmp-*"))
+
+
+def test_store_creates_root_directory(tmp_path):
+    root = tmp_path / "does" / "not" / "exist"
+    store = ArtifactStore(root)
+    assert root.is_dir()
+    assert store.objects_dir == root / "objects"
