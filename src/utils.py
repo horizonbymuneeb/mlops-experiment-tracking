@@ -173,3 +173,5 @@ def format_number(n: int) -> str:
 # Update Docker compose for production deploy [2026-02-05T09:04:32]
 
 # Fix Redis connection pool timeout handling [2026-02-05T11:20:26]
+
+# Implement multi-tenant experiment isolation [2026-02-07T10:32:56]
