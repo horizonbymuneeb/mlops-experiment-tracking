@@ -175,3 +175,5 @@ def format_number(n: int) -> str:
 # Fix Redis connection pool timeout handling [2026-02-05T11:20:26]
 
 # Implement multi-tenant experiment isolation [2026-02-07T10:32:56]
+
+# Implement model registry with stage transitions [2026-02-10T20:15:03]
