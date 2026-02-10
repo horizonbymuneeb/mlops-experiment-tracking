@@ -14,3 +14,31 @@ from pathlib import Path
 from typing import Any, Mapping
 
 import yaml
+
+DEFAULT_CONFIG: dict[str, Any] = {
+    "database": {
+        "path": "tracker.db",
+        "busy_timeout_ms": 5000,
+        "journal_mode": "WAL",
+        "synchronous": "NORMAL",
+    },
+    "artifacts": {
+        "directory": "artifacts",
+        "hash_algorithm": "sha256",
+        "verify_on_read": False,
+    },
+    "metrics": {
+        "auto_step": True,
+        "max_batch": 500,
+    },
+    "runs": {
+        "allow_reopen": True,
+        "default_notes": "",
+    },
+    "cli": {
+        "default_limit": 20,
+        "date_format": "%Y-%m-%d %H:%M",
+    },
+}
+
+JOURNAL_MODES = ("DELETE", "TRUNCATE", "PERSIST", "MEMORY", "WAL", "OFF")
