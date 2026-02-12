@@ -111,3 +111,60 @@ class DatabaseConfig:
             journal_mode=str(mapping["journal_mode"]),
             synchronous=str(mapping["synchronous"]),
         )
+
+
+@dataclass(frozen=True)
+class ArtifactConfig:
+    """Content-addressed artifact store settings."""
+
+    directory: str = "artifacts"
+    hash_algorithm: str = "sha256"
+    verify_on_read: bool = False
+
+    def __post_init__(self) -> None:
+        if not self.directory:
+            raise ConfigError("artifacts.directory must not be empty")
+        if self.hash_algorithm not in HASH_ALGORITHMS:
+            raise ConfigError(
+                f"artifacts.hash_algorithm must be one of {HASH_ALGORITHMS}, "
+                f"got {self.hash_algorithm!r}"
+            )
+
+    @classmethod
+    def from_mapping(cls, mapping: Mapping[str, Any]) -> "ArtifactConfig":
+        return cls(
+            directory=str(mapping["directory"]),
+            hash_algorithm=str(mapping["hash_algorithm"]),
+            verify_on_read=bool(mapping["verify_on_read"]),
+        )
+
+
+@dataclass(frozen=True)
+class MetricsConfig:
+    """How metric rows are written."""
+
+    auto_step: bool = True
+    max_batch: int = 500
+
+    def __post_init__(self) -> None:
+        if self.max_batch < 1:
+            raise ConfigError("metrics.max_batch must be >= 1")
+
+    @classmethod
+    def from_mapping(cls, mapping: Mapping[str, Any]) -> "MetricsConfig":
+        return cls(auto_step=bool(mapping["auto_step"]), max_batch=int(mapping["max_batch"]))
+
+
+@dataclass(frozen=True)
+class RunsConfig:
+    """Run lifecycle policy."""
+
+    allow_reopen: bool = True
+    default_notes: str = ""
+
+    @classmethod
+    def from_mapping(cls, mapping: Mapping[str, Any]) -> "RunsConfig":
+        return cls(
+            allow_reopen=bool(mapping["allow_reopen"]),
+            default_notes=str(mapping["default_notes"]),
+        )

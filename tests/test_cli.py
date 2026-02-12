@@ -98,3 +98,40 @@ def test_list_empty(cli, capsys):
     invoke, _, _ = cli
     assert invoke("list") == EXIT_OK
     assert "no runs" in capsys.readouterr().out
+
+
+def test_list_and_json_output(cli, capsys):
+    invoke, config_path, _ = cli
+    seed(config_path)
+    capsys.readouterr()
+    assert invoke("list") == EXIT_OK
+    out = capsys.readouterr().out
+    assert "baseline" in out and "wider" in out
+    assert "id" in out and "status" in out
+
+    assert invoke("--json", "list") == EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    assert [item["name"] for item in payload] == ["baseline", "wider"]
+
+
+def test_list_filters(cli, capsys):
+    invoke, config_path, _ = cli
+    seed(config_path)
+    capsys.readouterr()
+    assert invoke("list", "--status", "finished", "--limit", "1") == EXIT_OK
+    out = capsys.readouterr().out
+    assert "run(s)" in out
+    assert invoke("list", "--tag", "nightly") == EXIT_OK
+    assert "baseline" in capsys.readouterr().out
+
+
+def test_show_run(cli, capsys):
+    invoke, config_path, _ = cli
+    tracker, run, _ = seed(config_path)
+    capsys.readouterr()
+    assert invoke("show", str(run.id)) == EXIT_OK
+    out = capsys.readouterr().out
+    assert "baseline" in out
+    assert "lr" in out
+    assert "loss" in out
+    assert "point(s)" in out
