@@ -72,3 +72,42 @@ _SECTION_TYPES: dict[str, dict[str, type]] = {
         "date_format": str,
     },
 }
+
+
+class ConfigError(ValueError):
+    """Raised when a config mapping is malformed or an override is unknown."""
+
+
+@dataclass(frozen=True)
+class DatabaseConfig:
+    """Where the SQLite file lives and how connections behave."""
+
+    path: str = "tracker.db"
+    busy_timeout_ms: int = 5000
+    journal_mode: str = "WAL"
+    synchronous: str = "NORMAL"
+
+    def __post_init__(self) -> None:
+        if not self.path:
+            raise ConfigError("database.path must not be empty")
+        if self.busy_timeout_ms < 0:
+            raise ConfigError("database.busy_timeout_ms must be >= 0")
+        if self.journal_mode.upper() not in JOURNAL_MODES:
+            raise ConfigError(
+                f"database.journal_mode must be one of {JOURNAL_MODES}, "
+                f"got {self.journal_mode!r}"
+            )
+        if self.synchronous.upper() not in SYNC_MODES:
+            raise ConfigError(
+                f"database.synchronous must be one of {SYNC_MODES}, "
+                f"got {self.synchronous!r}"
+            )
+
+    @classmethod
+    def from_mapping(cls, mapping: Mapping[str, Any]) -> "DatabaseConfig":
+        return cls(
+            path=str(mapping["path"]),
+            busy_timeout_ms=int(mapping["busy_timeout_ms"]),
+            journal_mode=str(mapping["journal_mode"]),
+            synchronous=str(mapping["synchronous"]),
+        )

@@ -76,3 +76,25 @@ def test_parser_has_all_commands():
     assert actions, "subparsers missing"
     choices = actions[0].choices
     assert set(choices) == {"init", "list", "show", "compare", "export", "search", "schema", "gc"}
+
+
+def test_init_creates_database(cli, capsys):
+    invoke, config_path, tmp_path = cli
+    assert invoke("init", "--no-config") == EXIT_OK
+    out = capsys.readouterr().out
+    assert "database:" in out
+    assert (tmp_path / "cli.db").exists()
+
+
+def test_init_writes_config_when_missing(cli, capsys):
+    invoke, config_path, tmp_path = cli
+    target = tmp_path / "fresh.yaml"
+    assert main(["--config", str(target), "init"]) == EXIT_OK
+    assert target.exists()
+    assert "database" in yaml.safe_load(target.read_text(encoding="utf-8"))
+
+
+def test_list_empty(cli, capsys):
+    invoke, _, _ = cli
+    assert invoke("list") == EXIT_OK
+    assert "no runs" in capsys.readouterr().out
