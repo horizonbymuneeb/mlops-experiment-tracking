@@ -168,3 +168,101 @@ class RunsConfig:
             allow_reopen=bool(mapping["allow_reopen"]),
             default_notes=str(mapping["default_notes"]),
         )
+
+
+@dataclass(frozen=True)
+class CliConfig:
+    """Presentation defaults for the command line interface."""
+
+    default_limit: int = 20
+    date_format: str = "%Y-%m-%d %H:%M"
+
+    def __post_init__(self) -> None:
+        if self.default_limit < 1:
+            raise ConfigError("cli.default_limit must be >= 1")
+
+    @classmethod
+    def from_mapping(cls, mapping: Mapping[str, Any]) -> "CliConfig":
+        return cls(
+            default_limit=int(mapping["default_limit"]),
+            date_format=str(mapping["date_format"]),
+        )
+
+
+@dataclass(frozen=True)
+class TrackerConfig:
+    """Fully resolved configuration; the object every component receives."""
+
+    database: DatabaseConfig = field(default_factory=DatabaseConfig)
+    artifacts: ArtifactConfig = field(default_factory=ArtifactConfig)
+    metrics: MetricsConfig = field(default_factory=MetricsConfig)
+    runs: RunsConfig = field(default_factory=RunsConfig)
+    cli: CliConfig = field(default_factory=CliConfig)
+    base_dir: Path = field(default_factory=lambda: Path.cwd())
+
+    def db_path(self) -> Path:
+        """Absolute path of the SQLite database file."""
+        return resolve_path(self.database.path, self.base_dir)
+
+    def artifact_dir(self) -> Path:
+        """Absolute path of the artifact store root."""
+        return resolve_path(self.artifacts.directory, self.base_dir)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "database": {
+                "path": self.database.path,
+                "busy_timeout_ms": self.database.busy_timeout_ms,
+                "journal_mode": self.database.journal_mode,
+                "synchronous": self.database.synchronous,
+            },
+            "artifacts": {
+                "directory": self.artifacts.directory,
+                "hash_algorithm": self.artifacts.hash_algorithm,
+                "verify_on_read": self.artifacts.verify_on_read,
+            },
+            "metrics": {
+                "auto_step": self.metrics.auto_step,
+                "max_batch": self.metrics.max_batch,
+            },
+            "runs": {
+                "allow_reopen": self.runs.allow_reopen,
+                "default_notes": self.runs.default_notes,
+            },
+            "cli": {
+                "default_limit": self.cli.default_limit,
+                "date_format": self.cli.date_format,
+            },
+            "base_dir": str(self.base_dir),
+        }
+
+    @classmethod
+    def from_mapping(
+        cls, mapping: Mapping[str, Any], base_dir: Path | str | None = None
+    ) -> "TrackerConfig":
+        merged = deep_merge(DEFAULT_CONFIG, mapping)
+        validate_config(merged)
+        root = Path(base_dir) if base_dir is not None else Path.cwd()
+        return cls(
+            database=DatabaseConfig.from_mapping(merged["database"]),
+            artifacts=ArtifactConfig.from_mapping(merged["artifacts"]),
+            metrics=MetricsConfig.from_mapping(merged["metrics"]),
+            runs=RunsConfig.from_mapping(merged["runs"]),
+            cli=CliConfig.from_mapping(merged["cli"]),
+            base_dir=root,
+        )
+
+
+def deep_merge(base: Mapping[str, Any], override: Mapping[str, Any]) -> dict[str, Any]:
+    """Recursively merge ``override`` into a copy of ``base``.
+
+    Lists and scalars replace the base value outright; mappings merge key by
+    key. The inputs are not mutated.
+    """
+    result: dict[str, Any] = copy.deepcopy(dict(base))
+    for key, value in override.items():
+        if key in result and isinstance(result[key], Mapping) and isinstance(value, Mapping):
+            result[key] = deep_merge(result[key], value)
+        else:
+            result[key] = copy.deepcopy(value)
+    return result
