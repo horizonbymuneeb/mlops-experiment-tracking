@@ -310,3 +310,5 @@ if __name__ == '__main__':
 # Implement automated retraining trigger logic [2026-02-11T18:55:29]
 
 # Add MLflow experiment wrapper with tags support [2026-02-16T18:03:03]
+
+# Fix race condition in metrics aggregation [2026-02-16T18:52:05]
