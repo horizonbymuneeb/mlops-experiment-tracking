@@ -266,3 +266,43 @@ def deep_merge(base: Mapping[str, Any], override: Mapping[str, Any]) -> dict[str
         else:
             result[key] = copy.deepcopy(value)
     return result
+
+
+def validate_config(mapping: Mapping[str, Any]) -> None:
+    """Check section names, key names and value types.
+
+    Unknown sections or keys are errors rather than silent no-ops: a typo in
+    ``config.yaml`` should fail loudly instead of quietly using the default.
+    """
+    if not isinstance(mapping, Mapping):
+        raise ConfigError(f"config must be a mapping, got {type(mapping).__name__}")
+    for section, value in mapping.items():
+        if section not in _SECTION_TYPES:
+            raise ConfigError(f"unknown config section {section!r}")
+        if not isinstance(value, Mapping):
+            raise ConfigError(f"config section {section!r} must be a mapping")
+        allowed = _SECTION_TYPES[section]
+        for key, item in value.items():
+            if key not in allowed:
+                raise ConfigError(f"unknown config key {section}.{key}")
+            expected = allowed[key]
+            if expected is bool:
+                if not isinstance(item, bool):
+                    raise ConfigError(f"config key {section}.{key} must be a bool")
+            elif expected is int:
+                if isinstance(item, bool) or not isinstance(item, int):
+                    raise ConfigError(f"config key {section}.{key} must be an int")
+            elif expected is str:
+                if not isinstance(item, str):
+                    raise ConfigError(f"config key {section}.{key} must be a string")
+        missing = set(allowed) - set(value)
+        if missing:
+            raise ConfigError(f"config section {section!r} is missing keys: {sorted(missing)}")
+
+
+def resolve_path(value: str | Path, base_dir: Path) -> Path:
+    """Resolve ``value`` against ``base_dir`` unless it is already absolute."""
+    path = Path(value).expanduser()
+    if path.is_absolute():
+        return path
+    return (Path(base_dir).expanduser() / path).resolve()

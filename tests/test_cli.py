@@ -135,3 +135,30 @@ def test_show_run(cli, capsys):
     assert "lr" in out
     assert "loss" in out
     assert "point(s)" in out
+
+
+def test_show_with_metric_points(cli, capsys):
+    invoke, config_path, _ = cli
+    tracker, run, _ = seed(config_path)
+    capsys.readouterr()
+    assert invoke("show", str(run.id), "--metrics") == EXIT_OK
+    out = capsys.readouterr().out
+    assert "step" in out and "0.9" in out and "0.5" in out
+
+
+def test_show_json(cli, capsys):
+    invoke, config_path, _ = cli
+    tracker, run, _ = seed(config_path)
+    capsys.readouterr()
+    assert invoke("--json", "show", "baseline") == EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["run"]["name"] == "baseline"
+    assert "metrics" not in payload
+
+
+def test_show_unknown_run_returns_error(cli, capsys):
+    invoke, config_path, _ = cli
+    seed(config_path)
+    capsys.readouterr()
+    assert invoke("show", "ghost") == EXIT_ERROR
+    assert "error:" in capsys.readouterr().err
