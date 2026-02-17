@@ -350,3 +350,4 @@
 [2026-02-13T20:35:04] Add cost tracking per experiment run
 [2026-02-16T18:03:03] Add MLflow experiment wrapper with tags support
 [2026-02-16T18:52:05] Fix race condition in metrics aggregation
+[2026-02-17T13:15:18] Update Docker compose for production deploy
