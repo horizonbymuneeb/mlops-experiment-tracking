@@ -306,3 +306,47 @@ def resolve_path(value: str | Path, base_dir: Path) -> Path:
     if path.is_absolute():
         return path
     return (Path(base_dir).expanduser() / path).resolve()
+
+
+def load_config(
+    path: str | Path | None = None, overrides: Mapping[str, Any] | None = None
+) -> TrackerConfig:
+    """Load ``config.yaml``, apply ``overrides`` and return a resolved config.
+
+    ``path=None`` means "defaults only". Relative paths inside the file resolve
+    against the file's directory; when no file is given they resolve against
+    the current working directory.
+    """
+    raw: dict[str, Any] = {}
+    base_dir = Path.cwd()
+    if path is not None:
+        cfg_path = Path(path).expanduser()
+        if not cfg_path.is_file():
+            raise ConfigError(f"config file not found: {cfg_path}")
+        text = cfg_path.read_text(encoding="utf-8")
+        try:
+            loaded = yaml.safe_load(text) or {}
+        except yaml.YAMLError as exc:  # pragma: no cover - message passthrough
+            raise ConfigError(f"invalid YAML in {cfg_path}: {exc}") from exc
+        if not isinstance(loaded, Mapping):
+            raise ConfigError(f"{cfg_path} must contain a mapping at the top level")
+        raw = dict(loaded)
+        base_dir = cfg_path.resolve().parent
+    if overrides:
+        raw = deep_merge(raw, overrides)
+    return TrackerConfig.from_mapping(raw, base_dir=base_dir)
+
+
+def write_default_config(path: str | Path, *, overwrite: bool = False) -> Path:
+    """Write the default configuration to ``path``.
+
+    Used by ``tracker init``. Existing files are kept unless ``overwrite`` is
+    true, because clobbering a tuned config is not something a tool should do
+    silently.
+    """
+    target = Path(path).expanduser()
+    if target.exists() and not overwrite:
+        raise ConfigError(f"{target} already exists (pass overwrite=True to replace it)")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(yaml.safe_dump(DEFAULT_CONFIG, sort_keys=False), encoding="utf-8")
+    return target

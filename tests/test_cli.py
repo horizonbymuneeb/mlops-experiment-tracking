@@ -162,3 +162,39 @@ def test_show_unknown_run_returns_error(cli, capsys):
     capsys.readouterr()
     assert invoke("show", "ghost") == EXIT_ERROR
     assert "error:" in capsys.readouterr().err
+
+
+def test_compare_command(cli, capsys):
+    invoke, config_path, _ = cli
+    tracker, run, other = seed(config_path)
+    capsys.readouterr()
+    assert invoke("compare", str(run.id), str(other.id), "--direction", "min") == EXIT_OK
+    out = capsys.readouterr().out
+    assert "runs:" in out
+    assert "loss" in out
+    assert "best" in out
+
+
+def test_compare_json(cli, capsys):
+    invoke, config_path, _ = cli
+    tracker, run, other = seed(config_path)
+    capsys.readouterr()
+    assert invoke("--json", "compare", str(run.id), str(other.id)) == EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["direction"] == "max"
+    assert "loss" in payload["best"] or payload["best"]
+
+
+def test_export_json_and_csv(cli, capsys, tmp_path):
+    invoke, config_path, _ = cli
+    seed(config_path)
+    capsys.readouterr()
+    target = tmp_path / "out.json"
+    assert invoke("export", "--out", str(target)) == EXIT_OK
+    assert json.loads(target.read_text(encoding="utf-8"))["run_count"] == 2
+    csv_target = tmp_path / "out.csv"
+    assert invoke("export", "--out", str(csv_target), "--format", "metrics-csv") == EXIT_OK
+    assert csv_target.read_text(encoding="utf-8").startswith("run_id,run_name,key,step,value")
+    manifest = tmp_path / "manifest.json"
+    assert invoke("export", "--out", str(manifest), "--format", "manifest") == EXIT_OK
+    assert "blobs" in json.loads(manifest.read_text(encoding="utf-8"))
