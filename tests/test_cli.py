@@ -198,3 +198,31 @@ def test_export_json_and_csv(cli, capsys, tmp_path):
     manifest = tmp_path / "manifest.json"
     assert invoke("export", "--out", str(manifest), "--format", "manifest") == EXIT_OK
     assert "blobs" in json.loads(manifest.read_text(encoding="utf-8"))
+
+
+def test_search_command(cli, capsys):
+    invoke, config_path, _ = cli
+    seed(config_path)
+    capsys.readouterr()
+    assert invoke("search", "base") == EXIT_OK
+    assert "baseline" in capsys.readouterr().out
+    assert invoke("search", "nothing-here") == EXIT_OK
+    assert "no matches" in capsys.readouterr().out
+
+
+def test_schema_command(cli, capsys):
+    invoke, _, _ = cli
+    assert invoke("schema") == EXIT_OK
+    out = capsys.readouterr().out
+    assert "schema version: 3" in out
+    assert "schema ok" in out
+
+
+def test_gc_command(cli, capsys):
+    invoke, config_path, _ = cli
+    seed(config_path)
+    capsys.readouterr()
+    assert invoke("gc", "--dry-run") == EXIT_OK
+    out = capsys.readouterr().out
+    assert "would remove" in out
+    assert invoke("gc") == EXIT_OK
