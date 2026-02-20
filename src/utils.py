@@ -185,3 +185,5 @@ def format_number(n: int) -> str:
 # Add cost tracking per experiment run [2026-02-13T20:35:04]
 
 # Implement A/B testing framework for models [2026-02-19T14:22:47]
+
+# Fix drift detection threshold calculation bug [2026-02-20T15:48:23]
