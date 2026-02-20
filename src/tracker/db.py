@@ -19,3 +19,6 @@ from pathlib import Path
 from typing import Any, Callable, Iterator, Sequence, TypeVar
 
 T = TypeVar("T")
+
+DEFAULT_BUSY_TIMEOUT_MS = 5000
+DEFAULT_JOURNAL_MODE = "WAL"

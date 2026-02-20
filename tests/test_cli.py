@@ -226,3 +226,18 @@ def test_gc_command(cli, capsys):
     out = capsys.readouterr().out
     assert "would remove" in out
     assert invoke("gc") == EXIT_OK
+
+
+def test_format_table_pads_columns():
+    text = format_table([["a", 1], ["bb", 22]], ["name", "n"])
+    lines = text.splitlines()
+    assert lines[0].startswith("name")
+    assert set(lines[1]) <= {"-", " "}
+    assert "bb" in lines[3]
+
+
+def test_resolve_config_db_override(tmp_path):
+    parser = build_parser()
+    args = parser.parse_args(["--db", str(tmp_path / "x.db"), "list"])
+    config = resolve_config(args)
+    assert config.db_path() == tmp_path / "x.db"
