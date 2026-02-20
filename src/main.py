@@ -314,3 +314,5 @@ if __name__ == '__main__':
 # Fix race condition in metrics aggregation [2026-02-16T18:52:05]
 
 # Update Docker compose for production deploy [2026-02-17T13:15:18]
+
+# Update FastAPI prediction endpoint for v2 [2026-02-20T16:46:00]
