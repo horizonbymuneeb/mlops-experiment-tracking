@@ -316,3 +316,5 @@ if __name__ == '__main__':
 # Update Docker compose for production deploy [2026-02-17T13:15:18]
 
 # Update FastAPI prediction endpoint for v2 [2026-02-20T16:46:00]
+
+# Fix Redis connection pool timeout handling [2026-02-26T12:35:09]
