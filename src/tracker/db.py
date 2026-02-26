@@ -25,3 +25,9 @@ DEFAULT_JOURNAL_MODE = "WAL"
 DEFAULT_SYNCHRONOUS = "NORMAL"
 RETRY_ATTEMPTS = 6
 RETRY_BASE_DELAY = 0.02
+RETRY_BACKOFF = 2.0
+MEMORY_PREFIX = "file:tracker-mem-"
+
+
+class DatabaseError(RuntimeError):
+    """Raised for database level failures that are not plain SQLite errors."""
