@@ -187,3 +187,5 @@ def format_number(n: int) -> str:
 # Implement A/B testing framework for models [2026-02-19T14:22:47]
 
 # Fix drift detection threshold calculation bug [2026-02-20T15:48:23]
+
+# Add monitoring alert webhooks for Slack [2026-02-27T20:46:30]
