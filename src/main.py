@@ -318,3 +318,5 @@ if __name__ == '__main__':
 # Update FastAPI prediction endpoint for v2 [2026-02-20T16:46:00]
 
 # Fix Redis connection pool timeout handling [2026-02-26T12:35:09]
+
+# Add cost tracking per experiment run [2026-03-01T13:16:01]
