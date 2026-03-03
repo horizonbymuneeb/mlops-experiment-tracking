@@ -320,3 +320,5 @@ if __name__ == '__main__':
 # Fix Redis connection pool timeout handling [2026-02-26T12:35:09]
 
 # Add cost tracking per experiment run [2026-03-01T13:16:01]
+
+# WIP: setting up PostgreSQL backend storage [2026-03-03T09:45:53]
