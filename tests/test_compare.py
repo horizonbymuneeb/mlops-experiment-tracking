@@ -41,3 +41,21 @@ def test_param_diff_to_dict_shape():
     payload = diff.to_dict()
     assert payload["changed"]["lr"] == {"left": 0.1, "right": 0.2}
     assert payload["left"] == 1
+
+
+def test_align_curves_uses_union_of_steps():
+    rows = align_curves({"a": [(0, 1.0), (2, 3.0)], "b": [(1, 2.0), (2, 4.0)]})
+    assert [row["step"] for row in rows] == [0, 1, 2]
+    assert rows[0] == {"step": 0, "a": 1.0, "b": None}
+    assert rows[1] == {"step": 1, "a": None, "b": 2.0}
+    assert rows[2] == {"step": 2, "a": 3.0, "b": 4.0}
+
+
+def test_align_curves_empty():
+    assert align_curves({}) == []
+    assert align_curves({"a": []}) == []
+
+
+def test_latest_values_uses_highest_step_not_list_order():
+    assert latest_values({"a": [(5, 1.0), (1, 9.0)]}) == {"a": 1.0}
+    assert latest_values({"a": []}) == {}
