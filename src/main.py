@@ -322,3 +322,5 @@ if __name__ == '__main__':
 # Add cost tracking per experiment run [2026-03-01T13:16:01]
 
 # WIP: setting up PostgreSQL backend storage [2026-03-03T09:45:53]
+
+# Add experiment comparison dashboard API [2026-03-05T15:42:38]
