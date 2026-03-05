@@ -59,3 +59,30 @@ def test_align_curves_empty():
 def test_latest_values_uses_highest_step_not_list_order():
     assert latest_values({"a": [(5, 1.0), (1, 9.0)]}) == {"a": 1.0}
     assert latest_values({"a": []}) == {}
+
+
+@pytest.mark.parametrize(
+    "values,direction,expected",
+    [
+        ({1: 0.5, 2: 0.9, 3: 0.7}, "max", 2),
+        ({1: 0.5, 2: 0.9, 3: 0.7}, "min", 1),
+        ({2: 0.9, 1: 0.9}, "max", 1),
+        ({}, "max", None),
+        ({7: -1.0, 8: -2.0}, "min", 8),
+    ],
+)
+def test_best_run(values, direction, expected):
+    assert best_run(values, direction) == expected
+
+
+def test_best_run_ties_pick_lowest_id():
+    assert best_run({9: 1.0, 3: 1.0, 7: 1.0}, "min") == 3
+
+
+def test_normalize_direction():
+    assert normalize_direction("MAX") == "max"
+    assert normalize_direction(" min ") == "min"
+    with pytest.raises(ComparisonError, match="direction"):
+        normalize_direction("up")
+    with pytest.raises(ComparisonError):
+        normalize_direction(1)

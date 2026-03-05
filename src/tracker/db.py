@@ -248,3 +248,34 @@ class Database:
 
     def __exit__(self, exc_type, exc, tb) -> None:
         self.close()
+
+
+class MemoryDatabase(Database):
+    """A shared-cache in-memory database that survives between connections.
+
+    ``sqlite3.connect(':memory:')`` creates a *new* database per connection, so
+    the tracker anchors a named shared-cache URI with one long-lived connection
+    instead. Useful for tests and for ``tracker list --db :memory:`` demos.
+    """
+
+    def __init__(self, *, busy_timeout_ms: int = DEFAULT_BUSY_TIMEOUT_MS) -> None:
+        self._name = f"{MEMORY_PREFIX}{uuid.uuid4().hex}?mode=memory&cache=shared"
+        super().__init__(self._name, busy_timeout_ms=busy_timeout_ms, journal_mode="MEMORY")
+        self._anchor = connect(self._name, busy_timeout_ms=busy_timeout_ms, journal_mode="MEMORY")
+        self._anchor_open = True
+
+    def close(self) -> None:
+        if self._anchor_open:
+            self._anchor.close()
+            self._anchor_open = False
+
+    def __del__(self) -> None:  # pragma: no cover - best effort cleanup
+        try:
+            self.close()
+        except Exception:
+            pass
+
+
+def memory_database() -> MemoryDatabase:
+    """Return a fresh in-memory database usable from several connections."""
+    return MemoryDatabase()
