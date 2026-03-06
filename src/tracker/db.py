@@ -279,3 +279,23 @@ class MemoryDatabase(Database):
 def memory_database() -> MemoryDatabase:
     """Return a fresh in-memory database usable from several connections."""
     return MemoryDatabase()
+
+
+def init_database(path: str | Path, **kwargs: Any) -> Database:
+    """Open ``path`` and bring the schema up to date."""
+    from tracker.schema import ensure_schema
+
+    db = Database(path, **kwargs)
+    with db.session() as conn:
+        ensure_schema(conn)
+    return db
+
+
+def readonly_connect(path: str | Path) -> sqlite3.Connection:
+    """Open an existing database read-only (used by export/show paths)."""
+    target = Path(path).expanduser()
+    if not target.exists():
+        raise DatabaseError(f"database does not exist: {target}")
+    conn = sqlite3.connect(f"file:{target}?mode=ro", uri=True)
+    conn.row_factory = sqlite3.Row
+    return conn

@@ -86,3 +86,26 @@ def test_normalize_direction():
         normalize_direction("up")
     with pytest.raises(ComparisonError):
         normalize_direction(1)
+
+
+def test_compare_runs_best_per_metric(db, seeded):
+    comparison = compare_runs(db, [seeded[0].id, seeded[1].id], direction="min")
+    assert comparison.metric_keys == ("loss",)
+    assert comparison.best["loss"] == seeded[1].id
+    assert comparison.latest[seeded[0].id]["loss"] == 0.6
+    assert comparison.best_run_id("loss") == seeded[1].id
+    assert comparison.best_run_id("nope") is None
+
+
+def test_compare_runs_direction_max(db, seeded):
+    comparison = compare_runs(db, [seeded[0].id, seeded[1].id], direction="max")
+    assert comparison.best["loss"] == seeded[0].id
+
+
+def test_compare_runs_param_diff_only_for_two(db, seeded):
+    two = compare_runs(db, [seeded[0].id, seeded[1].id])
+    assert two.param_diff is not None
+    assert two.param_diff.added == {"width": 64}
+    assert two.param_diff.changed == {"lr": (0.1, 0.01)}
+    three = compare_runs(db, [seeded[0].id, seeded[1].id, seeded[2].id])
+    assert three.param_diff is None
