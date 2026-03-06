@@ -324,3 +324,5 @@ if __name__ == '__main__':
 # WIP: setting up PostgreSQL backend storage [2026-03-03T09:45:53]
 
 # Add experiment comparison dashboard API [2026-03-05T15:42:38]
+
+# Implement Prometheus metrics collector service [2026-03-06T15:38:04]
