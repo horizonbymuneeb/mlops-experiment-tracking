@@ -326,3 +326,5 @@ if __name__ == '__main__':
 # Add experiment comparison dashboard API [2026-03-05T15:42:38]
 
 # Implement Prometheus metrics collector service [2026-03-06T15:38:04]
+
+# Fix memory leak in long-running tracker service [2026-03-08T14:38:30]
