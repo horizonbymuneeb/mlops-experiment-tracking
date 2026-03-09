@@ -109,3 +109,24 @@ def test_compare_runs_param_diff_only_for_two(db, seeded):
     assert two.param_diff.changed == {"lr": (0.1, 0.01)}
     three = compare_runs(db, [seeded[0].id, seeded[1].id, seeded[2].id])
     assert three.param_diff is None
+
+
+def test_compare_runs_aligned_curve(db, seeded):
+    comparison = compare_runs(db, [seeded[0].id, seeded[1].id])
+    rows = comparison.aligned("loss")
+    assert len(rows) == 3
+    assert rows[0][seeded[0].id] == 0.9
+    assert rows[2][seeded[1].id] == 0.4
+
+
+def test_compare_runs_to_dict(db, seeded):
+    payload = compare_runs(db, [seeded[0].id, seeded[1].id]).to_dict()
+    assert payload["run_ids"] == [seeded[0].id, seeded[1].id]
+    assert payload["direction"] == "max"
+    assert payload["metric_keys"] == ["loss"]
+    assert str(seeded[0].id) in payload["latest"]
+
+
+def test_compare_runs_metric_key_filter(db, seeded):
+    comparison = compare_runs(db, [seeded[0].id, seeded[1].id], metric_keys=["loss"])
+    assert comparison.metric_keys == ("loss",)

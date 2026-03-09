@@ -33,3 +33,16 @@ from tracker.query import (
 
 EXPORT_FORMAT = "mlops-experiment-tracking.export"
 EXPORT_VERSION = 1
+CSV_METRIC_COLUMNS = ("run_id", "run_name", "key", "step", "value")
+CSV_PARAM_COLUMNS = ("run_id", "run_name", "key", "value", "type")
+CSV_SUMMARY_COLUMNS = (
+    "run_id",
+    "name",
+    "status",
+    "started_at",
+    "finished_at",
+    "duration_seconds",
+    "tags",
+    "params",
+    "metrics",
+)
