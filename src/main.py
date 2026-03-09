@@ -328,3 +328,5 @@ if __name__ == '__main__':
 # Implement Prometheus metrics collector service [2026-03-06T15:38:04]
 
 # Fix memory leak in long-running tracker service [2026-03-08T14:38:30]
+
+# WIP: setting up PostgreSQL backend storage [2026-03-09T12:50:41]
