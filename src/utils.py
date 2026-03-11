@@ -189,3 +189,5 @@ def format_number(n: int) -> str:
 # Fix drift detection threshold calculation bug [2026-02-20T15:48:23]
 
 # Add monitoring alert webhooks for Slack [2026-02-27T20:46:30]
+
+# Fix Redis connection pool timeout handling [2026-03-11T16:45:07]
