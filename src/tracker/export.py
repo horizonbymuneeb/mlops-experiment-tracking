@@ -46,3 +46,22 @@ CSV_SUMMARY_COLUMNS = (
     "params",
     "metrics",
 )
+
+
+class ExportError(ValueError):
+    """Raised when a payload cannot be exported or imported."""
+
+
+def to_jsonable(value: Any) -> Any:
+    """Convert dataclasses, tuples and nested containers into JSON-safe values."""
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, Mapping):
+        return {str(key): to_jsonable(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [to_jsonable(item) for item in value]
+    if hasattr(value, "to_dict"):
+        return to_jsonable(value.to_dict())
+    raise ExportError(f"cannot serialise value of type {type(value).__name__}")

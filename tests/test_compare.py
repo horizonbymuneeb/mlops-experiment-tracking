@@ -130,3 +130,30 @@ def test_compare_runs_to_dict(db, seeded):
 def test_compare_runs_metric_key_filter(db, seeded):
     comparison = compare_runs(db, [seeded[0].id, seeded[1].id], metric_keys=["loss"])
     assert comparison.metric_keys == ("loss",)
+
+
+def test_compare_runs_validation(db, seeded):
+    with pytest.raises(ComparisonError, match="at least one"):
+        compare_runs(db, [])
+    with pytest.raises(ComparisonError, match="integer ids"):
+        compare_runs(db, ["baseline"])
+    with pytest.raises(ComparisonError, match="unique"):
+        compare_runs(db, [seeded[0].id, seeded[0].id])
+    with pytest.raises(ComparisonError, match="does not exist"):
+        compare_runs(db, [9999])
+
+
+def test_metric_table(db, seeded):
+    comparison = compare_runs(db, [seeded[0].id, seeded[1].id], direction="min")
+    table = metric_table(comparison)
+    assert table[0] == ["metric", f"run {seeded[0].id}", f"run {seeded[1].id}", "best"]
+    assert table[1][0] == "loss"
+    assert table[1][-1] == str(seeded[1].id)
+
+
+def test_format_comparison_mentions_params_and_metrics(db, seeded):
+    text = format_comparison(compare_runs(db, [seeded[0].id, seeded[1].id]))
+    assert "params (run" in text
+    assert "~ lr" in text
+    assert "loss" in text
+    assert "metrics (latest value)" in text
