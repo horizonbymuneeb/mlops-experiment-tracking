@@ -157,3 +157,33 @@ def test_format_comparison_mentions_params_and_metrics(db, seeded):
     assert "~ lr" in text
     assert "loss" in text
     assert "metrics (latest value)" in text
+
+
+def test_format_comparison_identical_params(db, tracker):
+    left = tracker.start_run("l", params={"lr": 0.1})
+    right = tracker.start_run("r", params={"lr": 0.1})
+    text = format_comparison(compare_runs(db, [left.id, right.id]))
+    assert "identical" in text
+
+
+def test_aggregate_metric(db, seeded):
+    ids = [seeded[0].id, seeded[1].id]
+    assert aggregate_metric(db, ids, "loss", "mean") == pytest.approx(0.5)
+    assert aggregate_metric(db, ids, "loss", "min") == pytest.approx(0.4)
+    assert aggregate_metric(db, ids, "loss", "max") == pytest.approx(0.6)
+    assert aggregate_metric(db, ids, "loss", "median") == pytest.approx(0.5)
+    assert aggregate_metric(db, ids, "missing", "mean") is None
+    with pytest.raises(ComparisonError, match="reducer"):
+        aggregate_metric(db, ids, "loss", "sum")
+
+
+def test_aggregate_metric_median_even_and_odd(db, tracker):
+    for value in (1.0, 2.0, 9.0):
+        run = tracker.start_run(f"m{value}")
+        run.log_metric("score", value, step=0)
+        run.finish()
+    ids = [1, 2, 3]
+    assert aggregate_metric(db, ids, "score", "median") == 2.0
+    fourth = tracker.start_run("m4")
+    fourth.log_metric("score", 4.0, step=0)
+    assert aggregate_metric(db, [1, 2, 3, 4], "score", "median") == pytest.approx(3.0)

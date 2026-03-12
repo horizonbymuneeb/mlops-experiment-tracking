@@ -65,3 +65,64 @@ def to_jsonable(value: Any) -> Any:
     if hasattr(value, "to_dict"):
         return to_jsonable(value.to_dict())
     raise ExportError(f"cannot serialise value of type {type(value).__name__}")
+
+
+def export_run(db: Database, run_id: int) -> dict[str, Any]:
+    """One run with params, tags, metric curves and artifact metadata."""
+    row = db.execute_one("SELECT * FROM runs WHERE id = ?", (run_id,))
+    if row is None:
+        raise ExportError(f"run {run_id} does not exist")
+    metrics: dict[str, list[list[float]]] = {}
+    for key in sorted(
+        str(item["key"])
+        for item in db.execute(
+            "SELECT DISTINCT key FROM metrics WHERE run_id = ?", (run_id,)
+        )
+    ):
+        metrics[key] = [[step, value] for step, value in fetch_metric_series(db, run_id, key)]
+    return {
+        "run": {
+            "id": int(row["id"]),
+            "name": str(row["name"]),
+            "status": str(row["status"]),
+            "started_at": str(row["started_at"]),
+            "finished_at": row["finished_at"],
+            "host": row["host"],
+            "notes": row["notes"],
+            "resumed_count": int(row["resumed_count"] or 0),
+        },
+        "params": to_jsonable(fetch_params(db, run_id)),
+        "tags": fetch_tags(db, run_id),
+        "metrics": metrics,
+        "artifacts": to_jsonable(fetch_artifacts(db, run_id)),
+    }
+
+
+def export_runs(
+    db: Database,
+    *,
+    run_ids: Sequence[int] | None = None,
+    run_filter: RunFilter | None = None,
+    include_artifacts: bool = True,
+) -> dict[str, Any]:
+    """Build the export document for the selected runs."""
+    if run_ids is not None:
+        resolved = []
+        for ref in run_ids:
+            row = db.execute_one("SELECT id FROM runs WHERE id = ?", (int(ref),))
+            if row is None:
+                raise ExportError(f"run {ref} does not exist")
+            resolved.append(int(row["id"]))
+    else:
+        resolved = [record.id for record in query_runs(db, run_filter or RunFilter())]
+    runs = [export_run(db, run_id) for run_id in resolved]
+    if not include_artifacts:
+        for payload in runs:
+            payload["artifacts"] = []
+    return {
+        "format": EXPORT_FORMAT,
+        "version": EXPORT_VERSION,
+        "exported_at": iso_now(),
+        "run_count": len(runs),
+        "runs": runs,
+    }
