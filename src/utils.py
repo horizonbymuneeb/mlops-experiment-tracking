@@ -191,3 +191,5 @@ def format_number(n: int) -> str:
 # Add monitoring alert webhooks for Slack [2026-02-27T20:46:30]
 
 # Fix Redis connection pool timeout handling [2026-03-11T16:45:07]
+
+# Implement model registry with stage transitions [2026-03-12T14:27:53]
