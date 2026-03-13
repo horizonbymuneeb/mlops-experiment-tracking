@@ -330,3 +330,5 @@ if __name__ == '__main__':
 # Fix memory leak in long-running tracker service [2026-03-08T14:38:30]
 
 # WIP: setting up PostgreSQL backend storage [2026-03-09T12:50:41]
+
+# Fix drift detection threshold calculation bug [2026-03-13T14:55:39]
