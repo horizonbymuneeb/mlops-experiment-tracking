@@ -126,3 +126,33 @@ def export_runs(
         "run_count": len(runs),
         "runs": runs,
     }
+
+
+def write_json(path: str | Path, payload: Mapping[str, Any]) -> Path:
+    """Serialise ``payload`` to ``path`` atomically, with stable key order."""
+    text = json.dumps(to_jsonable(payload), indent=2, sort_keys=True) + "\n"
+    return atomic_write_bytes(path, text.encode("utf-8"))
+
+
+def read_json(path: str | Path) -> dict[str, Any]:
+    """Read a JSON document and check its top level is an object."""
+    text = Path(path).read_text(encoding="utf-8")
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ExportError(f"{path} is not valid JSON: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise ExportError(f"{path} must contain a JSON object")
+    return payload
+
+
+def export_json_file(
+    db: Database,
+    path: str | Path,
+    *,
+    run_ids: Sequence[int] | None = None,
+    run_filter: RunFilter | None = None,
+) -> Path:
+    """Write the export document to ``path`` and return it."""
+    payload = export_runs(db, run_ids=run_ids, run_filter=run_filter)
+    return write_json(path, payload)

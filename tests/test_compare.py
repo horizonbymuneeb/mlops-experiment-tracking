@@ -187,3 +187,15 @@ def test_aggregate_metric_median_even_and_odd(db, tracker):
     fourth = tracker.start_run("m4")
     fourth.log_metric("score", 4.0, step=0)
     assert aggregate_metric(db, [1, 2, 3, 4], "score", "median") == pytest.approx(3.0)
+
+
+def test_summarize_params(db, seeded):
+    seen = summarize_params([record for record in query_records(db)], db)
+    assert seen["lr"] == {0.1, 0.01}
+    assert seen["width"] == {64}
+
+
+def query_records(db):
+    from tracker.query import query_runs
+
+    return query_runs(db)
