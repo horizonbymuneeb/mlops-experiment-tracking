@@ -193,3 +193,5 @@ def format_number(n: int) -> str:
 # Fix Redis connection pool timeout handling [2026-03-11T16:45:07]
 
 # Implement model registry with stage transitions [2026-03-12T14:27:53]
+
+# WIP: tuning Prometheus scrape intervals [2026-03-15T19:53:54]
