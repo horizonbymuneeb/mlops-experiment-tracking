@@ -156,3 +156,35 @@ def export_json_file(
     """Write the export document to ``path`` and return it."""
     payload = export_runs(db, run_ids=run_ids, run_filter=run_filter)
     return write_json(path, payload)
+
+
+def _csv_text(header: Sequence[str], rows: Iterable[Sequence[Any]]) -> str:
+    buffer = io.StringIO()
+    writer = csv.writer(buffer, lineterminator="\n")
+    writer.writerow(list(header))
+    for row in rows:
+        writer.writerow(list(row))
+    return buffer.getvalue()
+
+
+def export_metrics_csv(
+    db: Database, path: str | Path, run_ids: Sequence[int] | None = None
+) -> Path:
+    """Long-format metrics: one row per (run, key, step)."""
+    ids = (
+        [int(run_id) for run_id in run_ids]
+        if run_ids is not None
+        else [record.id for record in query_runs(db, RunFilter())]
+    )
+    rows: list[list[Any]] = []
+    for run_id in ids:
+        row = db.execute_one("SELECT name FROM runs WHERE id = ?", (run_id,))
+        if row is None:
+            raise ExportError(f"run {run_id} does not exist")
+        name = str(row["name"])
+        for item in db.execute(
+            "SELECT key, step, value FROM metrics WHERE run_id = ? ORDER BY key, step",
+            (run_id,),
+        ):
+            rows.append([run_id, name, item["key"], int(item["step"]), float(item["value"])])
+    return atomic_write_bytes(path, _csv_text(CSV_METRIC_COLUMNS, rows).encode("utf-8"))
