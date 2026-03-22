@@ -188,3 +188,78 @@ def export_metrics_csv(
         ):
             rows.append([run_id, name, item["key"], int(item["step"]), float(item["value"])])
     return atomic_write_bytes(path, _csv_text(CSV_METRIC_COLUMNS, rows).encode("utf-8"))
+
+
+def export_params_csv(
+    db: Database, path: str | Path, run_ids: Sequence[int] | None = None
+) -> Path:
+    """One row per (run, param)."""
+    ids = (
+        [int(run_id) for run_id in run_ids]
+        if run_ids is not None
+        else [record.id for record in query_runs(db, RunFilter())]
+    )
+    rows: list[list[Any]] = []
+    for run_id in ids:
+        row = db.execute_one("SELECT name FROM runs WHERE id = ?", (run_id,))
+        if row is None:
+            raise ExportError(f"run {run_id} does not exist")
+        name = str(row["name"])
+        for key, value in sorted(fetch_params(db, run_id).items()):
+            rows.append([run_id, name, key, json.dumps(value, sort_keys=True), type(value).__name__])
+    return atomic_write_bytes(path, _csv_text(CSV_PARAM_COLUMNS, rows).encode("utf-8"))
+
+
+def export_summary_csv(
+    db: Database, path: str | Path, run_ids: Sequence[int] | None = None
+) -> Path:
+    """One row per run with counts instead of the full curves."""
+    ids = (
+        [int(run_id) for run_id in run_ids]
+        if run_ids is not None
+        else [record.id for record in query_runs(db, RunFilter())]
+    )
+    rows: list[list[Any]] = []
+    for run_id in ids:
+        payload = export_run(db, run_id)
+        run = payload["run"]
+        started = parse_timestamp(run["started_at"])
+        finished = parse_timestamp(run["finished_at"]) if run["finished_at"] else None
+        duration = (finished - started).total_seconds() if finished else ""
+        rows.append(
+            [
+                run["id"],
+                run["name"],
+                run["status"],
+                run["started_at"],
+                run["finished_at"] or "",
+                duration,
+                ";".join(payload["tags"]),
+                json.dumps(payload["params"], sort_keys=True),
+                json.dumps({key: len(points) for key, points in payload["metrics"].items()}, sort_keys=True),
+            ]
+        )
+    return atomic_write_bytes(path, _csv_text(CSV_SUMMARY_COLUMNS, rows).encode("utf-8"))
+
+
+def export_manifest(db: Database) -> dict[str, Any]:
+    """Digest → size plus the runs that reference each blob."""
+    rows = db.execute(
+        "SELECT a.digest, a.size_bytes, a.run_id, a.name FROM artifacts a ORDER BY a.digest"
+    )
+    blobs: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        digest = str(row["digest"])
+        entry = blobs.setdefault(
+            digest,
+            {"digest": digest, "size_bytes": int(row["size_bytes"]), "references": []},
+        )
+        entry["references"].append({"run_id": int(row["run_id"]), "name": str(row["name"])})
+    return {
+        "format": EXPORT_FORMAT + ".manifest",
+        "version": EXPORT_VERSION,
+        "generated_at": iso_now(),
+        "blob_count": len(blobs),
+        "total_bytes": sum(int(entry["size_bytes"]) for entry in blobs.values()),
+        "blobs": blobs,
+    }
