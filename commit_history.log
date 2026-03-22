@@ -366,3 +366,4 @@
 [2026-03-12T14:27:53] Implement model registry with stage transitions
 [2026-03-13T14:55:39] Fix drift detection threshold calculation bug
 [2026-03-15T19:53:54] WIP: tuning Prometheus scrape intervals
+[2026-03-22T13:07:36] Fix race condition in metrics aggregation
