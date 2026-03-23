@@ -195,3 +195,5 @@ def format_number(n: int) -> str:
 # Implement model registry with stage transitions [2026-03-12T14:27:53]
 
 # WIP: tuning Prometheus scrape intervals [2026-03-15T19:53:54]
+
+# Update FastAPI prediction endpoint for v2 [2026-03-23T11:42:53]
