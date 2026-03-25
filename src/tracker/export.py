@@ -263,3 +263,93 @@ def export_manifest(db: Database) -> dict[str, Any]:
         "total_bytes": sum(int(entry["size_bytes"]) for entry in blobs.values()),
         "blobs": blobs,
     }
+
+
+def _require_export_document(payload: Mapping[str, Any]) -> list[dict[str, Any]]:
+    if payload.get("format") != EXPORT_FORMAT:
+        raise ExportError(
+            f"unexpected export format {payload.get('format')!r} (expected {EXPORT_FORMAT!r})"
+        )
+    version = payload.get("version")
+    if version != EXPORT_VERSION:
+        raise ExportError(f"unsupported export version {version!r}")
+    runs = payload.get("runs")
+    if not isinstance(runs, list) or not runs:
+        raise ExportError("export document contains no runs")
+    for index, entry in enumerate(runs):
+        if not isinstance(entry, dict) or "run" not in entry:
+            raise ExportError(f"run entry {index} is malformed")
+    return runs
+
+
+def import_runs(
+    db: Database, payload: Mapping[str, Any], *, run_ids: Sequence[int] | None = None
+) -> list[int]:
+    """Recreate runs from an export document; returns the new run ids."""
+    entries = _require_export_document(payload)
+    wanted = {int(run_id) for run_id in run_ids} if run_ids is not None else None
+    created: list[int] = []
+    for entry in entries:
+        run = entry["run"]
+        original_id = int(run["id"])
+        if wanted is not None and original_id not in wanted:
+            continue
+        with db.transaction() as conn:
+            cursor = conn.execute(
+                """
+                INSERT INTO runs (name, status, started_at, finished_at, host, notes, resumed_count)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    str(run["name"]),
+                    str(run["status"]),
+                    str(run["started_at"]),
+                    run.get("finished_at"),
+                    run.get("host"),
+                    run.get("notes"),
+                    int(run.get("resumed_count") or 0),
+                ),
+            )
+            new_id = int(cursor.lastrowid)
+            params = entry.get("params") or {}
+            from tracker.models import coerce_param_value
+
+            conn.executemany(
+                "INSERT INTO params (run_id, key, value, value_type) VALUES (?, ?, ?, ?)",
+                [(new_id, str(key), *coerce_param_value(value)) for key, value in params.items()],
+            )
+            conn.executemany(
+                "INSERT OR IGNORE INTO tags (run_id, tag) VALUES (?, ?)",
+                [(new_id, str(tag)) for tag in entry.get("tags") or []],
+            )
+            metric_rows = []
+            for key, points in (entry.get("metrics") or {}).items():
+                for step, value in points:
+                    metric_rows.append((new_id, str(key), int(step), float(value), iso_now()))
+            if metric_rows:
+                conn.executemany(
+                    "INSERT INTO metrics (run_id, key, step, value, recorded_at) "
+                    "VALUES (?, ?, ?, ?, ?)",
+                    metric_rows,
+                )
+            artifact_rows = [
+                (
+                    new_id,
+                    str(artifact["name"]),
+                    str(artifact["digest"]),
+                    int(artifact["size_bytes"]),
+                    artifact.get("media_type"),
+                    str(artifact.get("created_at") or iso_now()),
+                )
+                for artifact in entry.get("artifacts") or []
+            ]
+            if artifact_rows:
+                conn.executemany(
+                    "INSERT INTO artifacts (run_id, name, digest, size_bytes, media_type, created_at) "
+                    "VALUES (?, ?, ?, ?, ?, ?)",
+                    artifact_rows,
+                )
+        created.append(new_id)
+    if not created:
+        raise ExportError("no runs matched the import selection")
+    return created
