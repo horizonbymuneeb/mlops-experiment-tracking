@@ -334,3 +334,5 @@ if __name__ == '__main__':
 # Fix drift detection threshold calculation bug [2026-03-13T14:55:39]
 
 # Fix race condition in metrics aggregation [2026-03-22T13:07:36]
+
+# WIP: setting up PostgreSQL backend storage [2026-03-25T13:12:58]

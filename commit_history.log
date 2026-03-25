@@ -368,3 +368,4 @@
 [2026-03-15T19:53:54] WIP: tuning Prometheus scrape intervals
 [2026-03-22T13:07:36] Fix race condition in metrics aggregation
 [2026-03-23T11:42:53] Update FastAPI prediction endpoint for v2
+[2026-03-25T13:12:58] WIP: setting up PostgreSQL backend storage
