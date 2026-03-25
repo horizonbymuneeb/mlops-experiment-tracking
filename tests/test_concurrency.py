@@ -8,3 +8,5 @@ import os
 import pytest
 
 from tracker.run import Tracker
+
+WORKERS = 3

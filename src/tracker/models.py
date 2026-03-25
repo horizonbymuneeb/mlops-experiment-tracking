@@ -6,3 +6,14 @@ collapsing to a string the way a naive ``TEXT`` column would. Metrics are
 floats only and must be finite; a NaN in a metric curve breaks comparisons and
 JSON export, so it is rejected at the boundary.
 """
+
+from __future__ import annotations
+
+import json
+import math
+import sqlite3
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from typing import Any, Mapping
+
+RUN_STATUSES = ("running", "finished", "failed", "killed")
