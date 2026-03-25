@@ -336,3 +336,5 @@ if __name__ == '__main__':
 # Fix race condition in metrics aggregation [2026-03-22T13:07:36]
 
 # WIP: setting up PostgreSQL backend storage [2026-03-25T13:12:58]
+
+# Update REST API documentation with examples [2026-03-25T17:01:58]
