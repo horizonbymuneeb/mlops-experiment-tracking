@@ -338,3 +338,5 @@ if __name__ == '__main__':
 # WIP: setting up PostgreSQL backend storage [2026-03-25T13:12:58]
 
 # Update REST API documentation with examples [2026-03-25T17:01:58]
+
+# Add monitoring alert webhooks for Slack [2026-03-27T18:29:18]
