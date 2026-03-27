@@ -10,3 +10,4 @@ import pytest
 from tracker.run import Tracker
 
 WORKERS = 3
+POINTS_PER_WORKER = 20

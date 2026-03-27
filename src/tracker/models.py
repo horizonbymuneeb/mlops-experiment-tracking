@@ -17,3 +17,5 @@ from datetime import datetime, timezone
 from typing import Any, Mapping
 
 RUN_STATUSES = ("running", "finished", "failed", "killed")
+TERMINAL_STATUSES = frozenset({"finished", "failed", "killed"})
+PARAM_TYPES = ("null", "bool", "int", "float", "str", "json")
