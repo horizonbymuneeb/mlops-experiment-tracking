@@ -19,3 +19,15 @@ from typing import Any, Mapping
 RUN_STATUSES = ("running", "finished", "failed", "killed")
 TERMINAL_STATUSES = frozenset({"finished", "failed", "killed"})
 PARAM_TYPES = ("null", "bool", "int", "float", "str", "json")
+
+TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
+
+
+def utc_now() -> datetime:
+    """Timezone-aware UTC now, truncated to microseconds."""
+    return datetime.now(timezone.utc)
+
+
+def iso_now() -> str:
+    """Current UTC time as an ISO-8601 string with a ``Z`` suffix."""
+    return format_timestamp(utc_now())
