@@ -31,3 +31,30 @@ def utc_now() -> datetime:
 def iso_now() -> str:
     """Current UTC time as an ISO-8601 string with a ``Z`` suffix."""
     return format_timestamp(utc_now())
+
+
+def format_timestamp(moment: datetime) -> str:
+    """Serialise a datetime in the tracker's canonical UTC form."""
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    return moment.astimezone(timezone.utc).strftime(TIMESTAMP_FORMAT)
+
+
+def parse_timestamp(value: str) -> datetime:
+    """Parse a timestamp produced by :func:`format_timestamp`.
+
+    A few other ISO shapes are accepted (``+00:00`` offsets, no microseconds)
+    so timestamps written by older versions or by hand still load.
+    """
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"invalid timestamp {value!r}")
+    text = value.strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError as exc:
+        raise ValueError(f"invalid timestamp {value!r}") from exc
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
