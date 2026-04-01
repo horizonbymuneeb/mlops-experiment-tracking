@@ -197,3 +197,5 @@ def format_number(n: int) -> str:
 # WIP: tuning Prometheus scrape intervals [2026-03-15T19:53:54]
 
 # Update FastAPI prediction endpoint for v2 [2026-03-23T11:42:53]
+
+# Fix race condition in metrics aggregation [2026-04-01T15:05:49]
