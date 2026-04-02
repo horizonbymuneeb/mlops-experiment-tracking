@@ -58,3 +58,58 @@ def parse_timestamp(value: str) -> datetime:
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=timezone.utc)
     return parsed.astimezone(timezone.utc)
+
+
+def coerce_param_value(value: Any) -> tuple[str, str]:
+    """Encode a parameter into ``(json_text, type_name)``.
+
+    Lists and dicts are allowed and stored as ``json``; anything else is a bug
+    in the caller and raises ``TypeError`` rather than being stringified.
+    """
+    if value is None:
+        return "null", "null"
+    if isinstance(value, bool):
+        return json.dumps(value), "bool"
+    if isinstance(value, int):
+        return json.dumps(value), "int"
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise ValueError(f"parameter value must be finite, got {value!r}")
+        return json.dumps(value), "float"
+    if isinstance(value, str):
+        return json.dumps(value), "str"
+    if isinstance(value, (list, dict, tuple)):
+        return json.dumps(value, sort_keys=True), "json"
+    raise TypeError(f"unsupported parameter type: {type(value).__name__}")
+
+
+def decode_param_value(json_text: str, type_name: str) -> Any:
+    """Inverse of :func:`coerce_param_value`."""
+    if type_name not in PARAM_TYPES:
+        raise ValueError(f"unknown parameter type {type_name!r}")
+    value = json.loads(json_text)
+    if type_name == "null":
+        return None
+    if type_name == "bool":
+        return bool(value)
+    if type_name == "int":
+        return int(value)
+    if type_name == "float":
+        return float(value)
+    return value
+
+
+def coerce_metric_value(value: Any) -> float:
+    """Validate and normalise a metric value.
+
+    ``bool`` is rejected on purpose: logging ``True`` as a metric almost always
+    means the caller wanted a param or a tag.
+    """
+    if isinstance(value, bool):
+        raise TypeError("metric value must be numeric, not bool")
+    if isinstance(value, (int, float)):
+        numeric = float(value)
+        if not math.isfinite(numeric):
+            raise ValueError(f"metric value must be finite, got {value!r}")
+        return numeric
+    raise TypeError(f"metric value must be numeric, got {type(value).__name__}")
