@@ -199,3 +199,5 @@ def format_number(n: int) -> str:
 # Update FastAPI prediction endpoint for v2 [2026-03-23T11:42:53]
 
 # Fix race condition in metrics aggregation [2026-04-01T15:05:49]
+
+# Implement Prometheus metrics collector service [2026-04-02T12:08:40]
