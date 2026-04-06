@@ -113,3 +113,96 @@ def coerce_metric_value(value: Any) -> float:
             raise ValueError(f"metric value must be finite, got {value!r}")
         return numeric
     raise TypeError(f"metric value must be numeric, got {type(value).__name__}")
+
+
+def row_to_dict(row: sqlite3.Row | Mapping[str, Any] | None) -> dict[str, Any]:
+    """Convert a SQLite row (or mapping) to a plain dict."""
+    if row is None:
+        return {}
+    if isinstance(row, sqlite3.Row):
+        return {key: row[key] for key in row.keys()}
+    return dict(row)
+
+
+@dataclass(frozen=True)
+class RunRecord:
+    """One row of ``runs``."""
+
+    id: int
+    name: str
+    status: str
+    started_at: str
+    finished_at: str | None = None
+    host: str | None = None
+    notes: str | None = None
+    resumed_count: int = 0
+
+    def __post_init__(self) -> None:
+        if self.status not in RUN_STATUSES:
+            raise ValueError(f"unknown run status {self.status!r}")
+
+    @property
+    def is_finished(self) -> bool:
+        return self.status in TERMINAL_STATUSES
+
+    @property
+    def duration_seconds(self) -> float | None:
+        """Wall-clock duration, or ``None`` while the run is still open."""
+        if not self.finished_at:
+            return None
+        delta = parse_timestamp(self.finished_at) - parse_timestamp(self.started_at)
+        return delta.total_seconds()
+
+    @classmethod
+    def from_row(cls, row: sqlite3.Row | Mapping[str, Any]) -> "RunRecord":
+        data = row_to_dict(row)
+        return cls(
+            id=int(data["id"]),
+            name=str(data["name"]),
+            status=str(data["status"]),
+            started_at=str(data["started_at"]),
+            finished_at=data.get("finished_at"),
+            host=data.get("host"),
+            notes=data.get("notes"),
+            resumed_count=int(data.get("resumed_count") or 0),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "status": self.status,
+            "started_at": self.started_at,
+            "finished_at": self.finished_at,
+            "host": self.host,
+            "notes": self.notes,
+            "resumed_count": self.resumed_count,
+            "duration_seconds": self.duration_seconds,
+        }
+
+
+@dataclass(frozen=True)
+class ParamRecord:
+    """One ``(run_id, key)`` parameter entry."""
+
+    run_id: int
+    key: str
+    value: str
+    value_type: str
+
+    @property
+    def python_value(self) -> Any:
+        return decode_param_value(self.value, self.value_type)
+
+    @classmethod
+    def from_row(cls, row: sqlite3.Row | Mapping[str, Any]) -> "ParamRecord":
+        data = row_to_dict(row)
+        return cls(
+            run_id=int(data["run_id"]),
+            key=str(data["key"]),
+            value=str(data["value"]),
+            value_type=str(data["value_type"]),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"key": self.key, "value": self.python_value, "type": self.value_type}

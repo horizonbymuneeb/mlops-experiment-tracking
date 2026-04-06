@@ -76,3 +76,19 @@ def test_worker_cannot_write_to_a_finished_run(paths):
 
     with pytest.raises(RunStateError):
         run.log_metric("loss", 0.1)
+
+
+def test_second_connection_sees_committed_rows(paths):
+    db_path, artifact_dir = paths
+    first = Tracker(db_path=db_path, artifact_dir=artifact_dir)
+    run = first.start_run("visible")
+    run.log_metric("loss", 0.5, step=0)
+    second = Tracker(db_path=db_path, artifact_dir=artifact_dir)
+    assert second.get_run(run.id).metric_series("loss") == [(0, 0.5)]
+
+
+def test_wal_mode_enabled_on_shared_file(paths):
+    db_path, artifact_dir = paths
+    tracker = Tracker(db_path=db_path, artifact_dir=artifact_dir)
+    mode = tracker.db.scalar("PRAGMA journal_mode")
+    assert str(mode).lower() == "wal"
