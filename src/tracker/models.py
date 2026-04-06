@@ -206,3 +206,72 @@ class ParamRecord:
 
     def to_dict(self) -> dict[str, Any]:
         return {"key": self.key, "value": self.python_value, "type": self.value_type}
+
+
+@dataclass(frozen=True)
+class MetricRecord:
+    """One point on a metric curve."""
+
+    id: int
+    run_id: int
+    key: str
+    step: int
+    value: float
+    recorded_at: str
+
+    @classmethod
+    def from_row(cls, row: sqlite3.Row | Mapping[str, Any]) -> "MetricRecord":
+        data = row_to_dict(row)
+        return cls(
+            id=int(data["id"]),
+            run_id=int(data["run_id"]),
+            key=str(data["key"]),
+            step=int(data["step"]),
+            value=float(data["value"]),
+            recorded_at=str(data["recorded_at"]),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "key": self.key,
+            "step": self.step,
+            "value": self.value,
+            "recorded_at": self.recorded_at,
+        }
+
+
+@dataclass(frozen=True)
+class ArtifactRecord:
+    """A named pointer to a content-addressed blob."""
+
+    id: int
+    run_id: int
+    name: str
+    digest: str
+    size_bytes: int
+    media_type: str | None
+    created_at: str
+
+    @classmethod
+    def from_row(cls, row: sqlite3.Row | Mapping[str, Any]) -> "ArtifactRecord":
+        data = row_to_dict(row)
+        return cls(
+            id=int(data["id"]),
+            run_id=int(data["run_id"]),
+            name=str(data["name"]),
+            digest=str(data["digest"]),
+            size_bytes=int(data["size_bytes"]),
+            media_type=data.get("media_type"),
+            created_at=str(data["created_at"]),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "run_id": self.run_id,
+            "name": self.name,
+            "digest": self.digest,
+            "size_bytes": self.size_bytes,
+            "media_type": self.media_type,
+            "created_at": self.created_at,
+        }
