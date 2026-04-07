@@ -203,3 +203,5 @@ def format_number(n: int) -> str:
 # Implement Prometheus metrics collector service [2026-04-02T12:08:40]
 
 # WIP: tuning Prometheus scrape intervals [2026-04-06T18:21:38]
+
+# Add monitoring alert webhooks for Slack [2026-04-07T09:19:17]
