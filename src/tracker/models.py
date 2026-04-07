@@ -275,3 +275,38 @@ class ArtifactRecord:
             "media_type": self.media_type,
             "created_at": self.created_at,
         }
+
+
+@dataclass(frozen=True)
+class TagRecord:
+    """A free-form label attached to a run."""
+
+    run_id: int
+    tag: str
+
+    @classmethod
+    def from_row(cls, row: sqlite3.Row | Mapping[str, Any]) -> "TagRecord":
+        data = row_to_dict(row)
+        return cls(run_id=int(data["run_id"]), tag=str(data["tag"]))
+
+
+@dataclass(frozen=True)
+class RunSummary:
+    """A run plus everything needed to render or export it."""
+
+    run: RunRecord
+    params: dict[str, Any] = field(default_factory=dict)
+    latest_metrics: dict[str, float] = field(default_factory=dict)
+    metric_counts: dict[str, int] = field(default_factory=dict)
+    tags: tuple[str, ...] = ()
+    artifact_count: int = 0
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "run": self.run.to_dict(),
+            "params": dict(sorted(self.params.items())),
+            "latest_metrics": dict(sorted(self.latest_metrics.items())),
+            "metric_counts": dict(sorted(self.metric_counts.items())),
+            "tags": list(self.tags),
+            "artifact_count": self.artifact_count,
+        }
