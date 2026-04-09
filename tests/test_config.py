@@ -45,3 +45,22 @@ def test_every_default_section_is_used():
 def test_unknown_section_is_rejected():
     with pytest.raises(ConfigError, match="unknown config section"):
         TrackerConfig.from_mapping({"databse": {"path": "x.db"}})
+
+
+def test_unknown_key_is_rejected():
+    with pytest.raises(ConfigError, match="unknown config key database.pathh"):
+        TrackerConfig.from_mapping({"database": {"pathh": "x.db"}})
+
+
+def test_missing_key_is_rejected():
+    # from_mapping() fills defaults first; validate_config() is the strict entry
+    # point used when checking a hand-written mapping section by section.
+    from tracker.config import validate_config
+
+    with pytest.raises(ConfigError, match="missing keys"):
+        validate_config({"database": {"path": "x.db"}})
+
+
+def test_wrong_type_is_rejected():
+    with pytest.raises(ConfigError, match="must be an int"):
+        TrackerConfig.from_mapping({"metrics": {"auto_step": True, "max_batch": "lots"}})

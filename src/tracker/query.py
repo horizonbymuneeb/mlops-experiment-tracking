@@ -29,3 +29,8 @@ from tracker.models import (
 )
 
 ORDERABLE_COLUMNS = ("id", "started_at", "finished_at", "name", "status")
+MAX_LIMIT = 1000
+
+
+class QueryError(ValueError):
+    """Raised for filters that cannot be translated to SQL."""
