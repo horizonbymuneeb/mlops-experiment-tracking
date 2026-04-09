@@ -34,3 +34,30 @@ MAX_LIMIT = 1000
 
 class QueryError(ValueError):
     """Raised for filters that cannot be translated to SQL."""
+
+
+def escape_like(text: str) -> str:
+    """Escape ``%``, ``_`` and ``\\`` so a LIKE pattern is matched literally."""
+    return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def normalize_limit(limit: int | None) -> int | None:
+    """Validate a row limit (``None`` means unlimited)."""
+    if limit is None:
+        return None
+    if isinstance(limit, bool) or not isinstance(limit, int):
+        raise QueryError(f"limit must be an int, got {limit!r}")
+    if limit < 1:
+        raise QueryError("limit must be >= 1")
+    if limit > MAX_LIMIT:
+        raise QueryError(f"limit must be <= {MAX_LIMIT}")
+    return limit
+
+
+def normalize_offset(offset: int) -> int:
+    """Validate a pagination offset."""
+    if isinstance(offset, bool) or not isinstance(offset, int):
+        raise QueryError(f"offset must be an int, got {offset!r}")
+    if offset < 0:
+        raise QueryError("offset must be >= 0")
+    return offset

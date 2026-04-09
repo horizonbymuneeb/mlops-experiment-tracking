@@ -64,3 +64,18 @@ def test_missing_key_is_rejected():
 def test_wrong_type_is_rejected():
     with pytest.raises(ConfigError, match="must be an int"):
         TrackerConfig.from_mapping({"metrics": {"auto_step": True, "max_batch": "lots"}})
+
+
+def test_bool_is_not_accepted_as_int():
+    with pytest.raises(ConfigError, match="must be an int"):
+        TrackerConfig.from_mapping({"metrics": {"auto_step": True, "max_batch": True}})
+
+
+def test_invalid_journal_mode_rejected():
+    with pytest.raises(ConfigError, match="journal_mode"):
+        DatabaseConfig(journal_mode="turbo")
+
+
+def test_negative_busy_timeout_rejected():
+    with pytest.raises(ConfigError, match="busy_timeout_ms"):
+        DatabaseConfig(busy_timeout_ms=-1)
