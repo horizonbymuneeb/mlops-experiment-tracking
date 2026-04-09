@@ -379,3 +379,4 @@
 [2026-04-07T09:19:17] Add monitoring alert webhooks for Slack
 [2026-04-09T12:12:20] Implement A/B testing framework for models
 [2026-04-09T09:06:57] Add MLflow experiment wrapper with tags support
+[2026-04-09T12:06:15] WIP: tuning Prometheus scrape intervals
