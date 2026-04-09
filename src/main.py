@@ -344,3 +344,5 @@ if __name__ == '__main__':
 # Implement A/B testing framework for models [2026-03-31T11:12:27]
 
 # Implement multi-tenant experiment isolation [2026-04-06T18:43:39]
+
+# Add MLflow experiment wrapper with tags support [2026-04-09T09:06:57]
