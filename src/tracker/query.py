@@ -61,3 +61,137 @@ def normalize_offset(offset: int) -> int:
     if offset < 0:
         raise QueryError("offset must be >= 0")
     return offset
+
+
+@dataclass
+class RunFilter:
+    """Declarative run query."""
+
+    status: str | Sequence[str] | None = None
+    name_like: str | None = None
+    tags: Sequence[str] = field(default_factory=tuple)
+    params: Mapping[str, Any] = field(default_factory=dict)
+    param_ranges: Mapping[str, tuple[float | None, float | None]] = field(
+        default_factory=dict
+    )
+    metric_ranges: Mapping[str, tuple[float | None, float | None]] = field(
+        default_factory=dict
+    )
+    started_after: str | None = None
+    started_before: str | None = None
+    order_by: str = "id"
+    descending: bool = False
+    limit: int | None = None
+    offset: int = 0
+
+    def validate(self) -> "RunFilter":
+        """Raise ``QueryError`` if the filter cannot be executed as written."""
+        if self.status is not None:
+            statuses = [self.status] if isinstance(self.status, str) else list(self.status)
+            if not statuses:
+                raise QueryError("status filter is empty")
+            for status in statuses:
+                if not isinstance(status, str) or not status:
+                    raise QueryError(f"invalid status {status!r}")
+        if self.name_like is not None and not isinstance(self.name_like, str):
+            raise QueryError("name_like must be a string")
+        if self.order_by not in ORDERABLE_COLUMNS:
+            raise QueryError(
+                f"order_by must be one of {ORDERABLE_COLUMNS}, got {self.order_by!r}"
+            )
+        normalize_limit(self.limit)
+        normalize_offset(self.offset)
+        for label, mapping in (("params", self.params), ("param_ranges", self.param_ranges),
+                               ("metric_ranges", self.metric_ranges)):
+            if not isinstance(mapping, Mapping):
+                raise QueryError(f"{label} must be a mapping")
+        for key, bounds in self.param_ranges.items():
+            _validate_bounds("param_ranges", key, bounds)
+        for key, bounds in self.metric_ranges.items():
+            _validate_bounds("metric_ranges", key, bounds)
+        return self
+
+
+def _validate_bounds(label: str, key: str, bounds: Any) -> None:
+    if not isinstance(bounds, (tuple, list)) or len(bounds) != 2:
+        raise QueryError(f"{label}[{key!r}] must be a (low, high) pair")
+    low, high = bounds
+    for value in (low, high):
+        if value is not None and (
+            isinstance(value, bool) or not isinstance(value, (int, float))
+        ):
+            raise QueryError(f"{label}[{key!r}] bounds must be numbers or None")
+    if low is not None and high is not None and low > high:
+        raise QueryError(f"{label}[{key!r}] has low > high")
+
+
+def where_clause(filt: RunFilter) -> tuple[str, list[Any]]:
+    """Translate a validated filter into a ``WHERE`` fragment plus parameters."""
+    filt.validate()
+    clauses: list[str] = []
+    params: list[Any] = []
+
+    if filt.status is not None:
+        statuses = [filt.status] if isinstance(filt.status, str) else list(filt.status)
+        placeholders = ", ".join("?" for _ in statuses)
+        clauses.append(f"r.status IN ({placeholders})")
+        params.extend(statuses)
+
+    if filt.name_like:
+        clauses.append("r.name LIKE ? ESCAPE '\\'")
+        params.append(f"%{escape_like(filt.name_like)}%")
+
+    if filt.started_after:
+        clauses.append("r.started_at >= ?")
+        params.append(filt.started_after)
+    if filt.started_before:
+        clauses.append("r.started_at <= ?")
+        params.append(filt.started_before)
+
+    if filt.tags:
+        tags = [str(tag) for tag in filt.tags]
+        placeholders = ", ".join("?" for _ in tags)
+        clauses.append(
+            "(SELECT COUNT(DISTINCT t.tag) FROM tags t "
+            f"WHERE t.run_id = r.id AND t.tag IN ({placeholders})) = ?"
+        )
+        params.extend(tags)
+        params.append(len(tags))
+
+    for key, value in filt.params.items():
+        encoded, type_name = coerce_param_value(value)
+        clauses.append(
+            "EXISTS (SELECT 1 FROM params p WHERE p.run_id = r.id "
+            "AND p.key = ? AND p.value = ? AND p.value_type = ?)"
+        )
+        params.extend([str(key), encoded, type_name])
+
+    for key, (low, high) in filt.param_ranges.items():
+        clause = (
+            "EXISTS (SELECT 1 FROM params p WHERE p.run_id = r.id "
+            "AND p.key = ? AND p.value_type IN ('int','float')"
+        )
+        params.append(str(key))
+        if low is not None:
+            clause += " AND CAST(p.value AS REAL) >= ?"
+            params.append(float(low))
+        if high is not None:
+            clause += " AND CAST(p.value AS REAL) <= ?"
+            params.append(float(high))
+        clauses.append(clause + ")")
+
+    for key, (low, high) in filt.metric_ranges.items():
+        clause = (
+            "EXISTS (SELECT 1 FROM metrics m WHERE m.run_id = r.id AND m.key = ?"
+        )
+        params.append(str(key))
+        if low is not None:
+            clause += " AND m.value >= ?"
+            params.append(float(low))
+        if high is not None:
+            clause += " AND m.value <= ?"
+            params.append(float(high))
+        clauses.append(clause + ")")
+
+    sql = (" WHERE " + " AND ".join(clauses)) if clauses else ""
+    return sql, params
