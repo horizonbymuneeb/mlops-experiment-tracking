@@ -195,3 +195,25 @@ def where_clause(filt: RunFilter) -> tuple[str, list[Any]]:
 
     sql = (" WHERE " + " AND ".join(clauses)) if clauses else ""
     return sql, params
+
+
+def build_run_query(filt: RunFilter) -> tuple[str, list[Any]]:
+    """Full ``SELECT`` for a filter, including order and pagination."""
+    where, params = where_clause(filt)
+    direction = "DESC" if filt.descending else "ASC"
+    sql = f"SELECT r.* FROM runs r{where} ORDER BY r.{filt.order_by} {direction}, r.id {direction}"
+    limit = normalize_limit(filt.limit)
+    if limit is not None:
+        sql += " LIMIT ?"
+        params.append(limit)
+        offset = normalize_offset(filt.offset)
+        if offset:
+            sql += " OFFSET ?"
+            params.append(offset)
+    return sql, params
+
+
+def query_runs(db: Database, filt: RunFilter | None = None) -> list[RunRecord]:
+    """Return the runs matching ``filt``."""
+    sql, params = build_run_query(filt or RunFilter())
+    return [RunRecord.from_row(row) for row in db.execute(sql, params)]

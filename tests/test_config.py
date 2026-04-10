@@ -79,3 +79,18 @@ def test_invalid_journal_mode_rejected():
 def test_negative_busy_timeout_rejected():
     with pytest.raises(ConfigError, match="busy_timeout_ms"):
         DatabaseConfig(busy_timeout_ms=-1)
+
+
+def test_invalid_hash_algorithm_rejected():
+    with pytest.raises(ConfigError, match="hash_algorithm"):
+        ArtifactConfig(hash_algorithm="crc32")
+
+
+def test_cli_limit_must_be_positive():
+    with pytest.raises(ConfigError, match="default_limit"):
+        CliConfig(default_limit=0)
+
+
+def test_metrics_max_batch_must_be_positive():
+    with pytest.raises(ConfigError, match="max_batch"):
+        MetricsConfig(max_batch=0)
