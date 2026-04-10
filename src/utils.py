@@ -209,3 +209,5 @@ def format_number(n: int) -> str:
 # Implement A/B testing framework for models [2026-04-09T12:12:20]
 
 # Add model versioning and staging pipeline [2026-04-10T13:07:31]
+
+# Add MLflow experiment wrapper with tags support [2026-04-10T10:02:28]
