@@ -118,3 +118,21 @@ def test_load_config_reads_yaml_and_resolves_relative_paths(tmp_path):
     assert config.metrics.max_batch == 5
     assert config.db_path() == (tmp_path / "db" / "custom.db").resolve()
     assert config.artifact_dir() == (tmp_path / "artifacts").resolve()
+
+
+def test_load_config_missing_file_raises(tmp_path):
+    with pytest.raises(ConfigError, match="not found"):
+        load_config(tmp_path / "nope.yaml")
+
+
+def test_load_config_rejects_non_mapping_yaml(tmp_path):
+    cfg_file = tmp_path / "config.yaml"
+    cfg_file.write_text("- just\n- a list\n", encoding="utf-8")
+    with pytest.raises(ConfigError, match="mapping"):
+        load_config(cfg_file)
+
+
+def test_load_config_applies_overrides(tmp_path):
+    config = load_config(None, overrides={"cli": {"default_limit": 3}})
+    assert config.cli.default_limit == 3
+    assert config.database.busy_timeout_ms == 5000

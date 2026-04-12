@@ -242,3 +242,26 @@ def fetch_metric_series(db: Database, run_id: int, key: str) -> list[tuple[int, 
         (run_id, str(key)),
     )
     return [(int(row["step"]), float(row["value"])) for row in rows]
+
+
+def fetch_metric_rows(db: Database, run_id: int, key: str | None = None) -> list[MetricRecord]:
+    """Metric rows for a run, optionally narrowed to one key."""
+    if key is None:
+        rows = db.execute(
+            "SELECT * FROM metrics WHERE run_id = ? ORDER BY key, step", (run_id,)
+        )
+    else:
+        rows = db.execute(
+            "SELECT * FROM metrics WHERE run_id = ? AND key = ? ORDER BY step",
+            (run_id, str(key)),
+        )
+    return [MetricRecord.from_row(row) for row in rows]
+
+
+def fetch_latest_metric(db: Database, run_id: int, key: str) -> float | None:
+    """Most recent value of one metric, or ``None`` if it was never logged."""
+    row = db.execute_one(
+        "SELECT value FROM metrics WHERE run_id = ? AND key = ? ORDER BY step DESC LIMIT 1",
+        (run_id, str(key)),
+    )
+    return float(row["value"]) if row else None
