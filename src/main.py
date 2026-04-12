@@ -350,3 +350,5 @@ if __name__ == '__main__':
 # WIP: tuning Prometheus scrape intervals [2026-04-09T12:06:15]
 
 # Update FastAPI prediction endpoint for v2 [2026-04-12T09:38:32]
+
+# Add experiment comparison dashboard API [2026-04-12T10:10:36]
