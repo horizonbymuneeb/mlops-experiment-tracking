@@ -94,3 +94,27 @@ def test_cli_limit_must_be_positive():
 def test_metrics_max_batch_must_be_positive():
     with pytest.raises(ConfigError, match="max_batch"):
         MetricsConfig(max_batch=0)
+
+
+def test_deep_merge_is_recursive_and_pure():
+    base = {"a": {"b": 1, "c": 2}, "d": 3}
+    override = {"a": {"c": 9}}
+    merged = deep_merge(base, override)
+    assert merged == {"a": {"b": 1, "c": 9}, "d": 3}
+    assert base == {"a": {"b": 1, "c": 2}, "d": 3}, "deep_merge must not mutate its input"
+
+
+def test_deep_merge_replaces_lists():
+    assert deep_merge({"a": [1, 2]}, {"a": [3]}) == {"a": [3]}
+
+
+def test_load_config_reads_yaml_and_resolves_relative_paths(tmp_path):
+    cfg_file = tmp_path / "config.yaml"
+    cfg_file.write_text(
+        yaml.safe_dump({"database": {"path": "db/custom.db"}, "metrics": {"max_batch": 5}}),
+        encoding="utf-8",
+    )
+    config = load_config(cfg_file)
+    assert config.metrics.max_batch == 5
+    assert config.db_path() == (tmp_path / "db" / "custom.db").resolve()
+    assert config.artifact_dir() == (tmp_path / "artifacts").resolve()

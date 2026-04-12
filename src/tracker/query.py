@@ -217,3 +217,28 @@ def query_runs(db: Database, filt: RunFilter | None = None) -> list[RunRecord]:
     """Return the runs matching ``filt``."""
     sql, params = build_run_query(filt or RunFilter())
     return [RunRecord.from_row(row) for row in db.execute(sql, params)]
+
+
+def count_runs(db: Database, filt: RunFilter | None = None) -> int:
+    """Number of runs matching ``filt``, ignoring limit/offset."""
+    where, params = where_clause(filt or RunFilter())
+    row = db.execute_one(f"SELECT COUNT(*) AS n FROM runs r{where}", params)
+    return int(row["n"]) if row else 0
+
+
+def fetch_params(db: Database, run_id: int) -> dict[str, Any]:
+    """Decoded params for one run."""
+    rows = db.execute(
+        "SELECT key, value, value_type FROM params WHERE run_id = ? ORDER BY key",
+        (run_id,),
+    )
+    return {row["key"]: decode_param_value(row["value"], row["value_type"]) for row in rows}
+
+
+def fetch_metric_series(db: Database, run_id: int, key: str) -> list[tuple[int, float]]:
+    """``[(step, value), ...]`` for one run and metric key."""
+    rows = db.execute(
+        "SELECT step, value FROM metrics WHERE run_id = ? AND key = ? ORDER BY step",
+        (run_id, str(key)),
+    )
+    return [(int(row["step"]), float(row["value"])) for row in rows]
