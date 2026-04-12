@@ -348,3 +348,5 @@ if __name__ == '__main__':
 # Add MLflow experiment wrapper with tags support [2026-04-09T09:06:57]
 
 # WIP: tuning Prometheus scrape intervals [2026-04-09T12:06:15]
+
+# Update FastAPI prediction endpoint for v2 [2026-04-12T09:38:32]
