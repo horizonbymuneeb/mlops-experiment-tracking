@@ -211,3 +211,5 @@ def format_number(n: int) -> str:
 # Add model versioning and staging pipeline [2026-04-10T13:07:31]
 
 # Add MLflow experiment wrapper with tags support [2026-04-10T10:02:28]
+
+# Fix Redis connection pool timeout handling [2026-04-14T10:13:26]
