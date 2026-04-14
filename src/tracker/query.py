@@ -265,3 +265,19 @@ def fetch_latest_metric(db: Database, run_id: int, key: str) -> float | None:
         (run_id, str(key)),
     )
     return float(row["value"]) if row else None
+
+
+def fetch_metric_keys(db: Database, run_id: int) -> list[str]:
+    """Distinct metric keys of one run."""
+    rows = db.execute(
+        "SELECT DISTINCT key FROM metrics WHERE run_id = ? ORDER BY key", (run_id,)
+    )
+    return [str(row["key"]) for row in rows]
+
+
+def fetch_artifacts(db: Database, run_id: int) -> list[ArtifactRecord]:
+    """Artifacts linked to one run."""
+    rows = db.execute(
+        "SELECT * FROM artifacts WHERE run_id = ? ORDER BY name", (run_id,)
+    )
+    return [ArtifactRecord.from_row(row) for row in rows]

@@ -136,3 +136,26 @@ def test_load_config_applies_overrides(tmp_path):
     config = load_config(None, overrides={"cli": {"default_limit": 3}})
     assert config.cli.default_limit == 3
     assert config.database.busy_timeout_ms == 5000
+
+
+def test_absolute_paths_are_not_rebased(tmp_path):
+    absolute = tmp_path / "elsewhere" / "x.db"
+    config = TrackerConfig.from_mapping(
+        {"database": {"path": str(absolute)}}, base_dir=tmp_path
+    )
+    assert config.db_path() == absolute
+
+
+def test_resolve_path_expands_user():
+    resolved = resolve_path("~/data/x.db", Path("/tmp"))
+    assert str(resolved).startswith(str(Path.home()))
+
+
+def test_write_default_config_roundtrip(tmp_path):
+    target = tmp_path / "config.yaml"
+    written = write_default_config(target)
+    assert written == target
+    loaded = yaml.safe_load(target.read_text(encoding="utf-8"))
+    assert loaded == DEFAULT_CONFIG
+    config = load_config(target)
+    assert config.database.journal_mode == "WAL"
