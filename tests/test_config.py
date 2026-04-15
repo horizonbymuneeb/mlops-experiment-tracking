@@ -159,3 +159,23 @@ def test_write_default_config_roundtrip(tmp_path):
     assert loaded == DEFAULT_CONFIG
     config = load_config(target)
     assert config.database.journal_mode == "WAL"
+
+
+def test_write_default_config_refuses_to_clobber(tmp_path):
+    target = tmp_path / "config.yaml"
+    target.write_text("keep: me\n", encoding="utf-8")
+    with pytest.raises(ConfigError, match="already exists"):
+        write_default_config(target)
+    assert target.read_text(encoding="utf-8") == "keep: me\n"
+
+
+def test_write_default_config_overwrite(tmp_path):
+    target = tmp_path / "config.yaml"
+    target.write_text("old: 1\n", encoding="utf-8")
+    write_default_config(target, overwrite=True)
+    assert "database" in yaml.safe_load(target.read_text(encoding="utf-8"))
+
+
+def test_runs_config_default_notes():
+    assert RunsConfig().default_notes == ""
+    assert RunsConfig.from_mapping({"allow_reopen": False, "default_notes": "x"}).allow_reopen is False

@@ -281,3 +281,63 @@ def fetch_artifacts(db: Database, run_id: int) -> list[ArtifactRecord]:
         "SELECT * FROM artifacts WHERE run_id = ? ORDER BY name", (run_id,)
     )
     return [ArtifactRecord.from_row(row) for row in rows]
+
+
+def fetch_tags(db: Database, run_id: int) -> list[str]:
+    """Tags attached to one run."""
+    rows = db.execute("SELECT tag FROM tags WHERE run_id = ? ORDER BY tag", (run_id,))
+    return [str(row["tag"]) for row in rows]
+
+
+def fetch_summary(db: Database, run_id: int) -> RunSummary:
+    """Assemble a :class:`RunSummary` with a handful of grouped queries."""
+    row = db.execute_one("SELECT * FROM runs WHERE id = ?", (run_id,))
+    if row is None:
+        raise QueryError(f"run {run_id} does not exist")
+    latest = {
+        str(item["key"]): float(item["value"])
+        for item in db.execute(
+            """
+            SELECT m.key, m.value
+              FROM metrics m
+              JOIN (SELECT key, MAX(step) AS step FROM metrics
+                     WHERE run_id = ? GROUP BY key) last
+                ON last.key = m.key AND last.step = m.step
+             WHERE m.run_id = ?
+            """,
+            (run_id, run_id),
+        )
+    }
+    counts = {
+        str(item["key"]): int(item["n"])
+        for item in db.execute(
+            "SELECT key, COUNT(*) AS n FROM metrics WHERE run_id = ? GROUP BY key",
+            (run_id,),
+        )
+    }
+    artifact_row = db.execute_one(
+        "SELECT COUNT(*) AS n FROM artifacts WHERE run_id = ?", (run_id,)
+    )
+    return RunSummary(
+        run=RunRecord.from_row(row),
+        params=fetch_params(db, run_id),
+        latest_metrics=latest,
+        metric_counts=counts,
+        tags=tuple(fetch_tags(db, run_id)),
+        artifact_count=int(artifact_row["n"]) if artifact_row else 0,
+    )
+
+
+def run_detail(db: Database, run_id: int) -> dict[str, Any]:
+    """Everything needed to render one run (CLI ``show`` and JSON export)."""
+    summary = fetch_summary(db, run_id)
+    series: dict[str, list[tuple[int, float]]] = {}
+    for key in summary.metric_counts:
+        series[key] = fetch_metric_series(db, run_id, key)
+    return {
+        "run": summary.run.to_dict(),
+        "params": dict(sorted(summary.params.items())),
+        "tags": list(summary.tags),
+        "metrics": {key: [[step, value] for step, value in points] for key, points in series.items()},
+        "artifacts": [record.to_dict() for record in fetch_artifacts(db, run_id)],
+    }
