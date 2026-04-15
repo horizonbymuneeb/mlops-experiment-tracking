@@ -352,3 +352,5 @@ if __name__ == '__main__':
 # Update FastAPI prediction endpoint for v2 [2026-04-12T09:38:32]
 
 # Add experiment comparison dashboard API [2026-04-12T10:10:36]
+
+# Fix race condition in metrics aggregation [2026-04-15T13:35:13]

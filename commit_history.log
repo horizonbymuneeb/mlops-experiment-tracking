@@ -385,3 +385,4 @@
 [2026-04-12T09:38:32] Update FastAPI prediction endpoint for v2
 [2026-04-12T10:10:36] Add experiment comparison dashboard API
 [2026-04-14T10:13:26] Fix Redis connection pool timeout handling
+[2026-04-15T13:35:13] Fix race condition in metrics aggregation
