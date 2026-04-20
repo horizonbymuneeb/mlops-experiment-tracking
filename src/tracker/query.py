@@ -341,3 +341,24 @@ def run_detail(db: Database, run_id: int) -> dict[str, Any]:
         "metrics": {key: [[step, value] for step, value in points] for key, points in series.items()},
         "artifacts": [record.to_dict() for record in fetch_artifacts(db, run_id)],
     }
+
+
+def search_runs(db: Database, text: str, limit: int = 50) -> list[RunRecord]:
+    """Substring search over run names and notes."""
+    pattern = f"%{escape_like(str(text))}%"
+    rows = db.execute(
+        "SELECT * FROM runs WHERE name LIKE ? ESCAPE '\\' OR notes LIKE ? ESCAPE '\\' "
+        "ORDER BY id DESC LIMIT ?",
+        (pattern, pattern, normalize_limit(limit) or 50),
+    )
+    return [RunRecord.from_row(row) for row in rows]
+
+
+def distinct_tags(db: Database) -> list[str]:
+    """Every tag in the database, sorted."""
+    return [str(row["tag"]) for row in db.execute("SELECT DISTINCT tag FROM tags ORDER BY tag")]
+
+
+def distinct_param_keys(db: Database) -> list[str]:
+    """Every parameter key in the database, sorted."""
+    return [str(row["key"]) for row in db.execute("SELECT DISTINCT key FROM params ORDER BY key")]
