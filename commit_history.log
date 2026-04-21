@@ -387,3 +387,4 @@
 [2026-04-14T10:13:26] Fix Redis connection pool timeout handling
 [2026-04-15T13:35:13] Fix race condition in metrics aggregation
 [2026-04-20T15:58:31] Add cost tracking per experiment run
+[2026-04-21T14:50:55] Fix Redis connection pool timeout handling

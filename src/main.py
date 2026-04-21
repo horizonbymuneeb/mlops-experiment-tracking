@@ -354,3 +354,5 @@ if __name__ == '__main__':
 # Add experiment comparison dashboard API [2026-04-12T10:10:36]
 
 # Fix race condition in metrics aggregation [2026-04-15T13:35:13]
+
+# Fix Redis connection pool timeout handling [2026-04-21T14:50:55]
