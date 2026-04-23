@@ -362,3 +362,8 @@ def distinct_tags(db: Database) -> list[str]:
 def distinct_param_keys(db: Database) -> list[str]:
     """Every parameter key in the database, sorted."""
     return [str(row["key"]) for row in db.execute("SELECT DISTINCT key FROM params ORDER BY key")]
+
+
+def distinct_metric_keys(db: Database) -> list[str]:
+    """Every metric key in the database, sorted."""
+    return [str(row["key"]) for row in db.execute("SELECT DISTINCT key FROM metrics ORDER BY key")]
