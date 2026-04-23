@@ -215,3 +215,5 @@ def format_number(n: int) -> str:
 # Fix Redis connection pool timeout handling [2026-04-14T10:13:26]
 
 # Add cost tracking per experiment run [2026-04-20T15:58:31]
+
+# Fix race condition in metrics aggregation [2026-04-23T12:49:51]
