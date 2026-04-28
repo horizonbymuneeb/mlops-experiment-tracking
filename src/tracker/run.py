@@ -10,3 +10,35 @@ State transitions are checked inside the same transaction as the write they
 guard. That matters when two processes share a database: a worker that finds
 the run finished while it was computing cannot slip a metric in afterwards.
 """
+
+from __future__ import annotations
+
+import socket
+from contextlib import contextmanager
+from pathlib import Path
+from typing import Any, Iterable, Iterator, Mapping, Sequence
+
+from tracker.artifacts import ArtifactRef, ArtifactStore, infer_media_type
+from tracker.config import TrackerConfig
+from tracker.db import Database
+from tracker.models import (
+    RUN_STATUSES,
+    TERMINAL_STATUSES,
+    ArtifactRecord,
+    MetricRecord,
+    RunRecord,
+    RunSummary,
+    coerce_metric_value,
+    coerce_param_value,
+    decode_param_value,
+    iso_now,
+)
+from tracker.schema import ensure_schema
+
+
+class RunStateError(RuntimeError):
+    """Raised when a write is not allowed in the run's current state."""
+
+
+class RunNotFoundError(LookupError):
+    """Raised when a run id or name does not resolve."""
