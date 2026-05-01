@@ -217,3 +217,5 @@ def format_number(n: int) -> str:
 # Add cost tracking per experiment run [2026-04-20T15:58:31]
 
 # Fix race condition in metrics aggregation [2026-04-23T12:49:51]
+
+# Update REST API documentation with examples [2026-05-01T17:36:35]
