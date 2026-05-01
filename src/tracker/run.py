@@ -42,3 +42,14 @@ class RunStateError(RuntimeError):
 
 class RunNotFoundError(LookupError):
     """Raised when a run id or name does not resolve."""
+
+
+def _fetch_run_row(conn, run_id: int):
+    return conn.execute("SELECT * FROM runs WHERE id = ?", (run_id,)).fetchone()
+
+
+def _status_in(conn, run_id: int) -> str:
+    row = _fetch_run_row(conn, run_id)
+    if row is None:
+        raise RunNotFoundError(f"run {run_id} does not exist")
+    return str(row["status"])
