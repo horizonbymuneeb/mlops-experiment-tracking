@@ -39,3 +39,26 @@ def test_connect_creates_parent_directories(tmp_path):
     connection = connect(path)
     connection.close()
     assert path.exists()
+
+
+def test_transaction_commits(conn):
+    conn.execute("CREATE TABLE t (v INTEGER)")
+    with transaction(conn):
+        conn.execute("INSERT INTO t VALUES (1)")
+    assert conn.execute("SELECT COUNT(*) FROM t").fetchone()[0] == 1
+
+
+def test_transaction_rolls_back_on_error(conn):
+    conn.execute("CREATE TABLE t (v INTEGER)")
+    with pytest.raises(RuntimeError):
+        with transaction(conn):
+            conn.execute("INSERT INTO t VALUES (1)")
+            raise RuntimeError("boom")
+    assert conn.execute("SELECT COUNT(*) FROM t").fetchone()[0] == 0
+
+
+def test_is_locked_error():
+    assert is_locked_error(sqlite3.OperationalError("database is locked"))
+    assert is_locked_error(sqlite3.OperationalError("database table is locked"))
+    assert not is_locked_error(sqlite3.OperationalError("no such table: x"))
+    assert not is_locked_error(ValueError("locked"))
