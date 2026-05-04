@@ -62,3 +62,32 @@ def test_is_locked_error():
     assert is_locked_error(sqlite3.OperationalError("database table is locked"))
     assert not is_locked_error(sqlite3.OperationalError("no such table: x"))
     assert not is_locked_error(ValueError("locked"))
+
+
+def test_retry_on_locked_eventually_succeeds():
+    calls = {"n": 0}
+
+    def flaky():
+        calls["n"] += 1
+        if calls["n"] < 3:
+            raise sqlite3.OperationalError("database is locked")
+        return "done"
+
+    assert retry_on_locked(flaky, attempts=5, delay=0) == "done"
+    assert calls["n"] == 3
+
+
+def test_retry_on_locked_gives_up():
+    def always_locked():
+        raise sqlite3.OperationalError("database is locked")
+
+    with pytest.raises(sqlite3.OperationalError):
+        retry_on_locked(always_locked, attempts=3, delay=0)
+
+
+def test_retry_does_not_swallow_other_errors():
+    def broken():
+        raise sqlite3.OperationalError("no such table: missing")
+
+    with pytest.raises(sqlite3.OperationalError, match="no such table"):
+        retry_on_locked(broken, attempts=3, delay=0)

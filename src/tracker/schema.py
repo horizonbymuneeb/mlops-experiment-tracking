@@ -10,3 +10,10 @@ SQLite's ``user_version`` pragma, each step is a list of statements executed in
 one transaction, and a database newer than this code refuses to open rather
 than being silently downgraded.
 """
+
+from __future__ import annotations
+
+import sqlite3
+from typing import Iterable
+
+SCHEMA_VERSION = 3
