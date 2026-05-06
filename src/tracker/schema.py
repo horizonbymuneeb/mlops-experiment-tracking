@@ -74,3 +74,25 @@ MIGRATION_2: tuple[str, ...] = (
     "CREATE INDEX idx_artifacts_digest ON artifacts(digest)",
     "CREATE UNIQUE INDEX idx_artifacts_run_name ON artifacts(run_id, name)",
 )
+
+MIGRATION_3: tuple[str, ...] = (
+    """
+    CREATE TABLE tags (
+        run_id INTEGER NOT NULL REFERENCES runs(id) ON DELETE CASCADE,
+        tag TEXT NOT NULL,
+        PRIMARY KEY (run_id, tag)
+    )
+    """,
+    "CREATE INDEX idx_tags_tag ON tags(tag)",
+    "CREATE INDEX idx_runs_status ON runs(status)",
+)
+
+MIGRATIONS: dict[int, tuple[str, ...]] = {
+    1: MIGRATION_1,
+    2: MIGRATION_2,
+    3: MIGRATION_3,
+}
+
+
+class MigrationError(RuntimeError):
+    """Raised when a database cannot be brought to ``SCHEMA_VERSION``."""

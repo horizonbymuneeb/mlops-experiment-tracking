@@ -91,3 +91,30 @@ def test_retry_does_not_swallow_other_errors():
 
     with pytest.raises(sqlite3.OperationalError, match="no such table"):
         retry_on_locked(broken, attempts=3, delay=0)
+
+
+def test_execute_with_retry_returns_cursor(conn):
+    conn.execute("CREATE TABLE t (v INTEGER)")
+    cursor = execute_with_retry(conn, "INSERT INTO t VALUES (?)", (7,))
+    assert cursor.rowcount == 1
+    assert conn.execute("SELECT v FROM t").fetchone()[0] == 7
+
+
+def test_database_execute_helpers(tmp_path):
+    db = init_database(tmp_path / "helpers.db")
+    db.execute_write("INSERT INTO runs (name, status, started_at) VALUES (?, 'running', ?)", ("a", "2026-01-01T00:00:00.000000Z"))
+    rows = db.execute("SELECT name FROM runs")
+    assert [row["name"] for row in rows] == ["a"]
+    assert db.execute_one("SELECT name FROM runs")["name"] == "a"
+    assert db.execute_one("SELECT name FROM runs WHERE id = 999") is None
+    assert db.scalar("SELECT COUNT(*) FROM runs") == 1
+    assert db.scalar("SELECT id FROM runs WHERE id = 999", default=42) == 42
+
+
+def test_database_executemany(tmp_path):
+    db = init_database(tmp_path / "many.db")
+    db.execute_write("INSERT INTO runs (name, status, started_at) VALUES ('a', 'running', '2026-01-01T00:00:00.000000Z')")
+    rows = [(1, "lr", "0.1", "float"), (1, "epochs", "3", "int")]
+    assert db.executemany("INSERT INTO params (run_id, key, value, value_type) VALUES (?, ?, ?, ?)", rows) == 2
+    assert db.executemany("INSERT INTO params (run_id, key, value, value_type) VALUES (?, ?, ?, ?)", []) == 0
+    assert db.scalar("SELECT COUNT(*) FROM params") == 2
