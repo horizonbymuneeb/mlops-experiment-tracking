@@ -223,3 +223,5 @@ def format_number(n: int) -> str:
 # Implement A/B testing framework for models [2026-05-04T17:05:12]
 
 # Fix drift detection threshold calculation bug [2026-05-06T16:37:49]
+
+# Update REST API documentation with examples [2026-05-13T20:45:23]
