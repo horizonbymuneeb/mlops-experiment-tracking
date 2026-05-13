@@ -118,3 +118,31 @@ def test_database_executemany(tmp_path):
     assert db.executemany("INSERT INTO params (run_id, key, value, value_type) VALUES (?, ?, ?, ?)", rows) == 2
     assert db.executemany("INSERT INTO params (run_id, key, value, value_type) VALUES (?, ?, ?, ?)", []) == 0
     assert db.scalar("SELECT COUNT(*) FROM params") == 2
+
+
+def test_database_write_transaction_is_atomic(tmp_path):
+    db = init_database(tmp_path / "atomic.db")
+    with pytest.raises(sqlite3.IntegrityError):
+        with db.transaction() as conn:
+            conn.execute("INSERT INTO runs (name, status, started_at) VALUES ('a', 'running', '2026-01-01T00:00:00.000000Z')")
+            conn.execute("INSERT INTO runs (name, status, started_at) VALUES ('b', 'nonsense', '2026-01-01T00:00:00.000000Z')")
+    assert db.scalar("SELECT COUNT(*) FROM runs") == 0
+
+
+def test_database_path_and_memory_flags(tmp_path):
+    db = Database(tmp_path / "x.db")
+    assert db.path == tmp_path / "x.db"
+    assert db.is_memory is False
+    mem = memory_database()
+    assert mem.is_memory is True
+    mem.close()
+
+
+def test_memory_database_is_shared_between_connections():
+    mem = memory_database()
+    with mem.session() as conn:
+        conn.execute("CREATE TABLE shared (v INTEGER)")
+        conn.execute("INSERT INTO shared VALUES (5)")
+    with mem.session() as conn:
+        assert conn.execute("SELECT v FROM shared").fetchone()[0] == 5
+    mem.close()

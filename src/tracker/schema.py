@@ -96,3 +96,20 @@ MIGRATIONS: dict[int, tuple[str, ...]] = {
 
 class MigrationError(RuntimeError):
     """Raised when a database cannot be brought to ``SCHEMA_VERSION``."""
+
+
+def current_version(conn: sqlite3.Connection) -> int:
+    """Return the schema version recorded in ``PRAGMA user_version``."""
+    row = conn.execute("PRAGMA user_version").fetchone()
+    return int(row[0]) if row else 0
+
+
+def set_version(conn: sqlite3.Connection, version: int) -> None:
+    """Write ``version`` into ``PRAGMA user_version``.
+
+    The pragma does not accept bound parameters, so the value is interpolated
+    after an integer check.
+    """
+    if not isinstance(version, int) or version < 0:
+        raise MigrationError(f"invalid schema version {version!r}")
+    conn.execute(f"PRAGMA user_version = {version:d}")
