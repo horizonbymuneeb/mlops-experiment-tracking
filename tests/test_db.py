@@ -167,3 +167,14 @@ def test_integrity_check_and_counts(tmp_path):
     db = init_database(tmp_path / "integrity.db")
     assert db.integrity_check() == "ok"
     assert db.table_counts()["runs"] == 0
+
+
+def test_transaction_nested_error_does_not_leave_lock(conn):
+    conn.execute("CREATE TABLE t (v INTEGER)")
+    with pytest.raises(RuntimeError):
+        with transaction(conn):
+            conn.execute("INSERT INTO t VALUES (1)")
+            raise RuntimeError("x")
+    with transaction(conn):
+        conn.execute("INSERT INTO t VALUES (2)")
+    assert conn.execute("SELECT COUNT(*) FROM t").fetchone()[0] == 1

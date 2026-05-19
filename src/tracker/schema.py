@@ -155,3 +155,24 @@ def ensure_schema(conn: sqlite3.Connection) -> int:
     else:
         conn.execute("COMMIT")
     return SCHEMA_VERSION
+
+
+def table_names(conn: sqlite3.Connection) -> set[str]:
+    """Names of the user tables that currently exist."""
+    rows = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
+    ).fetchall()
+    return {row[0] for row in rows}
+
+
+def index_names(conn: sqlite3.Connection) -> set[str]:
+    """Names of all indexes, including the implicit ones SQLite creates."""
+    rows = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type = 'index' AND name NOT LIKE 'sqlite_%'"
+    ).fetchall()
+    return {row[0] for row in rows}
+
+
+def has_table(conn: sqlite3.Connection, name: str) -> bool:
+    """True when ``name`` is a table in this database."""
+    return name in table_names(conn)
