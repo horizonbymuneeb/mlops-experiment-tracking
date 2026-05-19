@@ -227,3 +227,5 @@ def format_number(n: int) -> str:
 # Update REST API documentation with examples [2026-05-13T20:45:23]
 
 # Add cost tracking per experiment run [2026-05-19T16:03:31]
+
+# Add model versioning and staging pipeline [2026-05-19T16:36:31]
