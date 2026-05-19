@@ -146,3 +146,24 @@ def test_memory_database_is_shared_between_connections():
     with mem.session() as conn:
         assert conn.execute("SELECT v FROM shared").fetchone()[0] == 5
     mem.close()
+
+
+def test_readonly_connect_reads_but_cannot_write(tmp_path):
+    db = init_database(tmp_path / "ro.db")
+    db.execute_write("INSERT INTO runs (name, status, started_at) VALUES ('a', 'running', '2026-01-01T00:00:00.000000Z')")
+    ro = readonly_connect(tmp_path / "ro.db")
+    assert ro.execute("SELECT name FROM runs").fetchone()[0] == "a"
+    with pytest.raises(sqlite3.OperationalError):
+        ro.execute("INSERT INTO runs (name, status, started_at) VALUES ('b', 'running', '2026-01-01T00:00:00.000000Z')")
+    ro.close()
+
+
+def test_readonly_connect_missing_file(tmp_path):
+    with pytest.raises(DatabaseError, match="does not exist"):
+        readonly_connect(tmp_path / "nope.db")
+
+
+def test_integrity_check_and_counts(tmp_path):
+    db = init_database(tmp_path / "integrity.db")
+    assert db.integrity_check() == "ok"
+    assert db.table_counts()["runs"] == 0

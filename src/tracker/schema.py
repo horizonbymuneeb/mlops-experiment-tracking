@@ -113,3 +113,45 @@ def set_version(conn: sqlite3.Connection, version: int) -> None:
     if not isinstance(version, int) or version < 0:
         raise MigrationError(f"invalid schema version {version!r}")
     conn.execute(f"PRAGMA user_version = {version:d}")
+
+
+def apply_migration(conn: sqlite3.Connection, version: int) -> None:
+    """Execute one migration step inside a transaction and bump the version.
+
+    The caller is responsible for the surrounding transaction when several
+    steps are applied together; this function only guarantees that a failing
+    statement leaves the version untouched.
+    """
+    statements = MIGRATIONS.get(version)
+    if statements is None:
+        raise MigrationError(f"no migration defined for version {version}")
+    for statement in statements:
+        conn.execute(statement)
+    set_version(conn, version)
+
+
+def ensure_schema(conn: sqlite3.Connection) -> int:
+    """Create or upgrade the schema; return the version now in place.
+
+    Raises ``MigrationError`` if the file was written by a newer version of the
+    code, or if an intermediate version is missing from ``MIGRATIONS``.
+    """
+    version = current_version(conn)
+    if version > SCHEMA_VERSION:
+        raise MigrationError(
+            f"database schema v{version} is newer than this code (v{SCHEMA_VERSION})"
+        )
+    if version == SCHEMA_VERSION:
+        return version
+    conn.execute("BEGIN IMMEDIATE")
+    try:
+        for step in range(version + 1, SCHEMA_VERSION + 1):
+            if step not in MIGRATIONS:
+                raise MigrationError(f"missing migration for version {step}")
+            apply_migration(conn, step)
+    except Exception:
+        conn.execute("ROLLBACK")
+        raise
+    else:
+        conn.execute("COMMIT")
+    return SCHEMA_VERSION
