@@ -225,3 +225,5 @@ def format_number(n: int) -> str:
 # Fix drift detection threshold calculation bug [2026-05-06T16:37:49]
 
 # Update REST API documentation with examples [2026-05-13T20:45:23]
+
+# Add cost tracking per experiment run [2026-05-19T16:03:31]
