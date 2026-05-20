@@ -398,3 +398,4 @@
 [2026-05-13T20:45:23] Update REST API documentation with examples
 [2026-05-19T16:03:31] Add cost tracking per experiment run
 [2026-05-19T16:36:31] Add model versioning and staging pipeline
+[2026-05-20T17:05:12] Update FastAPI prediction endpoint for v2
