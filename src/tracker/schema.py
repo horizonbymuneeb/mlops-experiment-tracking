@@ -176,3 +176,36 @@ def index_names(conn: sqlite3.Connection) -> set[str]:
 def has_table(conn: sqlite3.Connection, name: str) -> bool:
     """True when ``name`` is a table in this database."""
     return name in table_names(conn)
+
+
+def column_names(conn: sqlite3.Connection, table: str) -> list[str]:
+    """Column names of ``table`` in declaration order."""
+    if table not in TABLE_NAMES:
+        raise MigrationError(f"unknown table {table!r}")
+    rows = conn.execute(f"PRAGMA table_info({table})").fetchall()
+    return [row[1] for row in rows]
+
+
+def describe_schema(conn: sqlite3.Connection) -> dict[str, list[dict[str, object]]]:
+    """Introspect every tracker table into plain dictionaries.
+
+    Used by ``tracker show --schema`` and by the tests that assert migrations
+    produced the expected columns.
+    """
+    out: dict[str, list[dict[str, object]]] = {}
+    for table in TABLE_NAMES:
+        if not has_table(conn, table):
+            out[table] = []
+            continue
+        rows = conn.execute(f"PRAGMA table_info({table})").fetchall()
+        out[table] = [
+            {
+                "name": row[1],
+                "type": row[2],
+                "notnull": bool(row[3]),
+                "default": row[4],
+                "primary_key": bool(row[5]),
+            }
+            for row in rows
+        ]
+    return out
