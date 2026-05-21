@@ -209,3 +209,57 @@ def describe_schema(conn: sqlite3.Connection) -> dict[str, list[dict[str, object
             for row in rows
         ]
     return out
+
+
+def verify_schema(conn: sqlite3.Connection) -> list[str]:
+    """Return a list of human readable problems; empty means healthy."""
+    problems: list[str] = []
+    version = current_version(conn)
+    if version != SCHEMA_VERSION:
+        problems.append(f"schema version is {version}, expected {SCHEMA_VERSION}")
+    existing = table_names(conn)
+    for table in TABLE_NAMES:
+        if table not in existing:
+            problems.append(f"missing table {table}")
+    required_columns = {
+        "runs": {"id", "name", "status", "started_at", "finished_at"},
+        "params": {"run_id", "key", "value", "value_type"},
+        "metrics": {"run_id", "key", "step", "value", "recorded_at"},
+        "artifacts": {"run_id", "name", "digest", "size_bytes"},
+        "tags": {"run_id", "tag"},
+    }
+    for table, required in required_columns.items():
+        if table not in existing:
+            continue
+        missing = required - set(column_names(conn, table))
+        if missing:
+            problems.append(f"table {table} is missing columns: {sorted(missing)}")
+    return problems
+
+
+def table_counts(conn: sqlite3.Connection) -> dict[str, int]:
+    """Row count per tracker table (0 for tables that do not exist yet)."""
+    counts: dict[str, int] = {}
+    existing = table_names(conn)
+    for table in TABLE_NAMES:
+        if table not in existing:
+            counts[table] = 0
+            continue
+        row = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()
+        counts[table] = int(row[0])
+    return counts
+
+
+def drop_all(conn: sqlite3.Connection) -> None:
+    """Drop every tracker table and reset the version.
+
+    Only used by tests and by ``tracker init --force``; foreign keys are
+    disabled for the duration so the drop order does not matter.
+    """
+    conn.execute("PRAGMA foreign_keys = OFF")
+    try:
+        for table in reversed(TABLE_NAMES):
+            conn.execute(f"DROP TABLE IF EXISTS {table}")
+        set_version(conn, 0)
+    finally:
+        conn.execute("PRAGMA foreign_keys = ON")
