@@ -231,3 +231,5 @@ def format_number(n: int) -> str:
 # Add model versioning and staging pipeline [2026-05-19T16:36:31]
 
 # Update FastAPI prediction endpoint for v2 [2026-05-20T17:05:12]
+
+# Add experiment comparison dashboard API [2026-05-21T11:48:10]
