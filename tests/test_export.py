@@ -83,3 +83,95 @@ def test_json_file_roundtrip(db, seeded, tmp_path):
     payload = read_json(target)
     assert payload["run_count"] == 3
     assert json.loads(target.read_text(encoding="utf-8"))["format"] == EXPORT_FORMAT
+
+
+def test_write_json_is_sorted_and_atomic(tmp_path):
+    target = tmp_path / "out.json"
+    write_json(target, {"b": 1, "a": [1, 2]})
+    text = target.read_text(encoding="utf-8")
+    assert text.index('"a"') < text.index('"b"')
+    assert text.endswith("\n")
+
+
+def test_read_json_rejects_garbage(tmp_path):
+    bad = tmp_path / "bad.json"
+    bad.write_text("{not json", encoding="utf-8")
+    with pytest.raises(ExportError, match="not valid JSON"):
+        read_json(bad)
+    listing = tmp_path / "list.json"
+    listing.write_text("[1, 2]", encoding="utf-8")
+    with pytest.raises(ExportError, match="JSON object"):
+        read_json(listing)
+
+
+def test_metrics_csv(db, seeded, tmp_path):
+    target = tmp_path / "metrics.csv"
+    export_metrics_csv(db, target)
+    with open(target, newline="", encoding="utf-8") as handle:
+        rows = list(csv.reader(handle))
+    assert tuple(rows[0]) == CSV_METRIC_COLUMNS
+    assert len(rows) == 1 + 8  # 3 + 3 + 2 metric points
+    assert {row[2] for row in rows[1:]} == {"loss"}
+    assert rows[1][1] in {"baseline", "wider", "failed-run"}
+
+
+def test_metrics_csv_run_selection(db, seeded, tmp_path):
+    target = tmp_path / "one.csv"
+    export_metrics_csv(db, target, [seeded[1].id])
+    with open(target, newline="", encoding="utf-8") as handle:
+        rows = list(csv.reader(handle))
+    assert len(rows) == 4
+
+
+def test_params_csv(db, seeded, tmp_path):
+    target = tmp_path / "params.csv"
+    export_params_csv(db, target)
+    with open(target, newline="", encoding="utf-8") as handle:
+        rows = list(csv.reader(handle))
+    assert rows[0][:3] == ["run_id", "run_name", "key"]
+    keys = {row[2] for row in rows[1:]}
+    assert keys == {"lr", "epochs", "width"}
+    lr_row = next(row for row in rows[1:] if row[2] == "lr")
+    assert json.loads(lr_row[3]) in (0.1, 0.01)
+
+
+def test_summary_csv(db, seeded, tmp_path):
+    target = tmp_path / "summary.csv"
+    export_summary_csv(db, target)
+    with open(target, newline="", encoding="utf-8") as handle:
+        rows = list(csv.reader(handle))
+    assert len(rows) == 4
+    assert rows[0][1] == "name"
+    finished = next(row for row in rows[1:] if row[1] == "baseline")
+    assert finished[2] == "finished"
+    assert float(finished[5]) >= 0.0
+
+
+def test_export_manifest(db, tracker):
+    run = tracker.start_run("r")
+    first = run.log_artifact(b"one", name="one.bin")
+    second = tracker.start_run("r2")
+    second.log_artifact(b"one", name="copy.bin")
+    manifest = export_manifest(db)
+    assert manifest["blob_count"] == 1
+    assert manifest["total_bytes"] == 3
+    entry = manifest["blobs"][first.digest]
+    assert len(entry["references"]) == 2
+
+
+def test_to_jsonable_handles_nested_and_rejects_objects():
+    assert to_jsonable({"a": (1, 2), "b": Path("x")}) == {"a": [1, 2], "b": "x"}
+    with pytest.raises(ExportError, match="cannot serialise"):
+        to_jsonable(object())
+
+
+def test_import_runs_creates_new_ids(db, seeded, tmp_path):
+    document = export_runs(db)
+    created = import_runs(db, document)
+    assert len(created) == 3
+    assert created[0] != seeded[0].id
+    imported = export_run(db, created[0])
+    assert imported["run"]["name"] == "baseline"
+    assert imported["params"] == {"lr": 0.1, "epochs": 2}
+    assert imported["tags"] == ["nightly"]
+    assert imported["metrics"]["loss"] == [[0, 0.9], [1, 0.7], [2, 0.6]]
