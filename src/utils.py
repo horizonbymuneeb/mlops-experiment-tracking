@@ -233,3 +233,5 @@ def format_number(n: int) -> str:
 # Update FastAPI prediction endpoint for v2 [2026-05-20T17:05:12]
 
 # Add experiment comparison dashboard API [2026-05-21T11:48:10]
+
+# WIP: setting up PostgreSQL backend storage [2026-05-22T19:31:07]
