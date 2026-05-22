@@ -263,3 +263,11 @@ def drop_all(conn: sqlite3.Connection) -> None:
         set_version(conn, 0)
     finally:
         conn.execute("PRAGMA foreign_keys = ON")
+
+
+def statements_for(versions: Iterable[int]) -> list[str]:
+    """Flatten the DDL for ``versions`` — handy for tests and documentation."""
+    out: list[str] = []
+    for version in versions:
+        out.extend(MIGRATIONS[version])
+    return out
