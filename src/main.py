@@ -362,3 +362,5 @@ if __name__ == '__main__':
 # Add monitoring alert webhooks for Slack [2026-05-02T20:29:18]
 
 # Implement automated retraining trigger logic [2026-05-04T20:39:36]
+
+# Add experiment comparison dashboard API [2026-05-22T14:10:45]
