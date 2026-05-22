@@ -175,3 +175,47 @@ def test_import_runs_creates_new_ids(db, seeded, tmp_path):
     assert imported["params"] == {"lr": 0.1, "epochs": 2}
     assert imported["tags"] == ["nightly"]
     assert imported["metrics"]["loss"] == [[0, 0.9], [1, 0.7], [2, 0.6]]
+
+
+def test_import_runs_can_select(db, seeded):
+    document = export_runs(db, run_ids=[seeded[1].id])
+    created = import_runs(db, document)
+    assert len(created) == 1
+    assert export_run(db, created[0])["run"]["name"] == "wider"
+
+
+def test_import_runs_selection_by_original_id(db, seeded):
+    document = export_runs(db)
+    created = import_runs(db, document, run_ids=[seeded[0].id])
+    assert len(created) == 1
+    with pytest.raises(ExportError, match="no runs matched"):
+        import_runs(db, document, run_ids=[999])
+
+
+def test_import_preserves_artifacts(db, tracker):
+    run = tracker.start_run("r")
+    record = run.log_artifact(b"blob", name="blob.bin")
+    document = export_runs(db)
+    created = import_runs(db, document)
+    imported = export_run(db, created[0])
+    assert imported["artifacts"][0]["digest"] == record.digest
+    assert imported["artifacts"][0]["size_bytes"] == 4
+
+
+def test_import_rejects_bad_documents(db):
+    with pytest.raises(ExportError, match="unexpected export format"):
+        import_runs(db, {"format": "other", "version": 1, "runs": [{}]})
+    with pytest.raises(ExportError, match="unsupported export version"):
+        import_runs(db, {"format": EXPORT_FORMAT, "version": 99, "runs": [{}]})
+    with pytest.raises(ExportError, match="contains no runs"):
+        import_runs(db, {"format": EXPORT_FORMAT, "version": EXPORT_VERSION, "runs": []})
+    with pytest.raises(ExportError, match="malformed"):
+        import_runs(db, {"format": EXPORT_FORMAT, "version": EXPORT_VERSION, "runs": [{"x": 1}]})
+
+
+def test_export_import_roundtrip_metrics_identical(db, seeded):
+    before = export_run(db, seeded[0].id)
+    created = import_runs(db, export_runs(db, run_ids=[seeded[0].id]))
+    after = export_run(db, created[0])
+    assert before["metrics"] == after["metrics"]
+    assert before["params"] == after["params"]
