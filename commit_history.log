@@ -403,3 +403,4 @@
 [2026-05-22T19:31:07] WIP: setting up PostgreSQL backend storage
 [2026-05-22T14:10:45] Add experiment comparison dashboard API
 [2026-05-22T18:08:39] WIP: tuning Prometheus scrape intervals
+[2026-05-27T16:18:49] Fix memory leak in long-running tracker service

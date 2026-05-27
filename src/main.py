@@ -366,3 +366,5 @@ if __name__ == '__main__':
 # Add experiment comparison dashboard API [2026-05-22T14:10:45]
 
 # WIP: tuning Prometheus scrape intervals [2026-05-22T18:08:39]
+
+# Fix memory leak in long-running tracker service [2026-05-27T16:18:49]
