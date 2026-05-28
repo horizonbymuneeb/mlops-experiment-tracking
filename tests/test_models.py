@@ -94,3 +94,68 @@ def test_metric_rejects_nan_and_inf():
 def test_metric_rejects_strings():
     with pytest.raises(TypeError, match="numeric"):
         coerce_metric_value("0.5")
+
+
+def test_iso_now_is_parseable_and_utc():
+    stamp = iso_now()
+    parsed = parse_timestamp(stamp)
+    assert parsed.tzinfo is not None
+    assert abs((datetime.now(timezone.utc) - parsed).total_seconds()) < 5
+
+
+def test_timestamp_roundtrip():
+    moment = datetime(2026, 3, 4, 5, 6, 7, 890000, tzinfo=timezone.utc)
+    text = format_timestamp(moment)
+    assert text == "2026-03-04T05:06:07.890000Z"
+    assert parse_timestamp(text) == moment
+
+
+def test_parse_timestamp_accepts_offset_and_naive():
+    assert parse_timestamp("2026-03-04T05:06:07+00:00") == datetime(2026, 3, 4, 5, 6, 7, tzinfo=timezone.utc)
+    assert parse_timestamp("2026-03-04T05:06:07") == datetime(2026, 3, 4, 5, 6, 7, tzinfo=timezone.utc)
+
+
+def test_parse_timestamp_rejects_garbage():
+    for bad in ("", "yesterday", None):
+        with pytest.raises(ValueError):
+            parse_timestamp(bad)
+
+
+def test_format_timestamp_treats_naive_as_utc():
+    naive = datetime(2026, 1, 1, 12, 0, 0)
+    assert format_timestamp(naive).endswith("Z")
+
+
+def test_run_record_from_row_and_duration():
+    started = datetime(2026, 1, 1, 10, 0, 0, tzinfo=timezone.utc)
+    finished = started + timedelta(seconds=90)
+    record = RunRecord.from_row(
+        {
+            "id": 1,
+            "name": "a",
+            "status": "finished",
+            "started_at": format_timestamp(started),
+            "finished_at": format_timestamp(finished),
+            "host": "h",
+            "notes": None,
+            "resumed_count": 2,
+        }
+    )
+    assert record.is_finished is True
+    assert record.duration_seconds == pytest.approx(90.0)
+    assert record.to_dict()["resumed_count"] == 2
+
+
+def test_run_record_duration_none_while_running():
+    record = RunRecord(id=1, name="a", status="running", started_at=iso_now())
+    assert record.duration_seconds is None
+    assert record.is_finished is False
+
+
+def test_run_record_rejects_unknown_status():
+    with pytest.raises(ValueError, match="unknown run status"):
+        RunRecord(id=1, name="a", status="paused", started_at=iso_now())
+
+
+def test_run_statuses_are_the_documented_set():
+    assert RUN_STATUSES == ("running", "finished", "failed", "killed")
