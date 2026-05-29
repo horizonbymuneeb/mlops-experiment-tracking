@@ -368,3 +368,5 @@ if __name__ == '__main__':
 # WIP: tuning Prometheus scrape intervals [2026-05-22T18:08:39]
 
 # Fix memory leak in long-running tracker service [2026-05-27T16:18:49]
+
+# Update FastAPI prediction endpoint for v2 [2026-05-29T15:43:22]
