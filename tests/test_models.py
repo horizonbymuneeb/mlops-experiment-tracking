@@ -159,3 +159,58 @@ def test_run_record_rejects_unknown_status():
 
 def test_run_statuses_are_the_documented_set():
     assert RUN_STATUSES == ("running", "finished", "failed", "killed")
+
+
+def test_param_record_python_value():
+    record = ParamRecord.from_row({"run_id": 1, "key": "lr", "value": "0.25", "value_type": "float"})
+    assert record.python_value == 0.25
+    assert record.to_dict() == {"key": "lr", "value": 0.25, "type": "float"}
+
+
+def test_metric_record_from_row():
+    record = MetricRecord.from_row(
+        {"id": 3, "run_id": 1, "key": "loss", "step": 4, "value": 0.5, "recorded_at": iso_now()}
+    )
+    assert record.step == 4 and record.value == 0.5
+    assert record.to_dict()["key"] == "loss"
+
+
+def test_artifact_and_tag_records():
+    artifact = ArtifactRecord.from_row(
+        {
+            "id": 1,
+            "run_id": 2,
+            "name": "model.pt",
+            "digest": "a" * 64,
+            "size_bytes": 10,
+            "media_type": "application/octet-stream",
+            "created_at": iso_now(),
+        }
+    )
+    assert artifact.to_dict()["name"] == "model.pt"
+    tag = TagRecord.from_row({"run_id": 2, "tag": "nightly"})
+    assert tag.tag == "nightly"
+
+
+def test_run_summary_to_dict_sorts_keys():
+    summary = RunSummary(
+        run=RunRecord(id=1, name="a", status="finished", started_at=iso_now()),
+        params={"b": 2, "a": 1},
+        latest_metrics={"loss": 0.1},
+        metric_counts={"loss": 3},
+        tags=("x",),
+        artifact_count=1,
+    )
+    payload = summary.to_dict()
+    assert list(payload["params"]) == ["a", "b"]
+    assert payload["tags"] == ["x"]
+    assert payload["artifact_count"] == 1
+
+
+def test_row_to_dict_handles_none_and_mapping():
+    assert row_to_dict(None) == {}
+    assert row_to_dict({"a": 1}) == {"a": 1}
+
+
+def test_utc_now_is_aware():
+    assert utc_now().tzinfo is not None
