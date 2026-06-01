@@ -370,3 +370,5 @@ if __name__ == '__main__':
 # Fix memory leak in long-running tracker service [2026-05-27T16:18:49]
 
 # Update FastAPI prediction endpoint for v2 [2026-05-29T15:43:22]
+
+# Implement A/B testing framework for models [2026-06-01T17:13:02]
