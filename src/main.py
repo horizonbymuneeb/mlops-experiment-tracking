@@ -372,3 +372,5 @@ if __name__ == '__main__':
 # Update FastAPI prediction endpoint for v2 [2026-05-29T15:43:22]
 
 # Implement A/B testing framework for models [2026-06-01T17:13:02]
+
+# WIP: setting up PostgreSQL backend storage [2026-06-02T17:26:16]
