@@ -146,3 +146,62 @@ def test_normalize_limit_and_offset():
     for bad in (-1, True, 1.5):
         with pytest.raises(QueryError):
             normalize_offset(bad)
+
+
+def test_escape_like():
+    assert escape_like("50%_off\\") == "50\\%\\_off\\\\"
+
+
+def test_fetch_helpers(db, seeded):
+    run_id = seeded[0].id
+    assert fetch_params(db, run_id) == {"lr": 0.1, "epochs": 2}
+    assert fetch_metric_series(db, run_id, "loss") == [(0, 0.9), (1, 0.7), (2, 0.6)]
+    assert fetch_latest_metric(db, run_id, "loss") == 0.6
+    assert fetch_latest_metric(db, run_id, "missing") is None
+    assert fetch_metric_keys(db, run_id) == ["loss"]
+    assert fetch_tags(db, run_id) == ["nightly"]
+    assert len(fetch_metric_rows(db, run_id)) == 3
+    assert len(fetch_metric_rows(db, run_id, "loss")) == 3
+
+
+def test_fetch_artifacts(db, tracker):
+    run = tracker.start_run("with-artifact")
+    run.log_artifact(b"data", name="data.bin")
+    records = fetch_artifacts(db, run.id)
+    assert len(records) == 1
+    assert records[0].name == "data.bin"
+
+
+def test_fetch_summary(db, seeded):
+    summary = fetch_summary(db, seeded[1].id)
+    assert summary.run.name == "wider"
+    assert summary.params["width"] == 64
+    assert summary.latest_metrics["loss"] == 0.4
+    assert summary.metric_counts == {"loss": 3}
+    assert summary.tags == ("nightly", "wide")
+
+
+def test_fetch_summary_missing_run(db):
+    with pytest.raises(QueryError, match="does not exist"):
+        fetch_summary(db, 999)
+
+
+def test_run_detail_shape(db, seeded):
+    detail = run_detail(db, seeded[0].id)
+    assert detail["run"]["name"] == "baseline"
+    assert detail["metrics"]["loss"] == [[0, 0.9], [1, 0.7], [2, 0.6]]
+    assert detail["tags"] == ["nightly"]
+    assert detail["artifacts"] == []
+
+
+def test_search_runs_matches_name_and_notes(db, seeded):
+    seeded[2].set_notes("crashed during validation")
+    assert names(search_runs(db, "failed")) == ["failed-run"]
+    assert names(search_runs(db, "validation")) == ["failed-run"]
+    assert search_runs(db, "nothing") == []
+
+
+def test_distinct_helpers(db, seeded):
+    assert distinct_tags(db) == ["nightly", "wide"]
+    assert distinct_param_keys(db) == ["epochs", "lr", "width"]
+    assert distinct_metric_keys(db) == ["loss"]
