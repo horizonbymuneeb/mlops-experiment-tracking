@@ -84,3 +84,65 @@ def test_metric_ranges_match_any_point(db, seeded):
     assert names(cheap) == ["wider"]
     expensive = query_runs(db, RunFilter(metric_ranges={"loss": (1.0, None)}))
     assert names(expensive) == ["failed-run"]
+
+
+def test_combined_filters(db, seeded):
+    filt = RunFilter(status="finished", tags=["wide"], params={"lr": 0.01})
+    assert names(query_runs(db, filt)) == ["wider"]
+
+
+def test_ordering_and_pagination(db, seeded):
+    ascending = query_runs(db, RunFilter(order_by="name"))
+    assert [record.name for record in ascending] == ["baseline", "failed-run", "wider"]
+    descending = query_runs(db, RunFilter(order_by="name", descending=True))
+    assert [record.name for record in descending] == ["wider", "failed-run", "baseline"]
+    page = query_runs(db, RunFilter(order_by="id", limit=1, offset=1))
+    assert [record.id for record in page] == [2]
+
+
+def test_count_runs_ignores_pagination(db, seeded):
+    assert count_runs(db) == 3
+    assert count_runs(db, RunFilter(status="finished")) == 2
+    assert count_runs(db, RunFilter(status="finished", limit=1)) == 2
+
+
+def test_build_run_query_has_order_and_limit(db):
+    sql, params = build_run_query(RunFilter(limit=5, offset=2))
+    assert "ORDER BY r.id ASC" in sql
+    assert sql.endswith("LIMIT ? OFFSET ?")
+    assert params == [5, 2]
+
+
+def test_where_clause_without_filters(db):
+    where, params = where_clause(RunFilter())
+    assert where == ""
+    assert params == []
+
+
+def test_validate_rejects_bad_order(db):
+    with pytest.raises(QueryError, match="order_by"):
+        RunFilter(order_by="password").validate()
+
+
+def test_validate_rejects_bad_bounds(db):
+    with pytest.raises(QueryError, match="low > high"):
+        RunFilter(param_ranges={"lr": (1.0, 0.0)}).validate()
+    with pytest.raises(QueryError, match="pair"):
+        RunFilter(metric_ranges={"loss": (1.0,)}).validate()
+
+
+def test_validate_rejects_empty_status_list():
+    with pytest.raises(QueryError, match="status filter is empty"):
+        RunFilter(status=[]).validate()
+
+
+def test_normalize_limit_and_offset():
+    assert normalize_limit(None) is None
+    assert normalize_limit(5) == 5
+    for bad in (0, -1, True, "5", MAX_LIMIT + 1):
+        with pytest.raises(QueryError):
+            normalize_limit(bad)
+    assert normalize_offset(0) == 0
+    for bad in (-1, True, 1.5):
+        with pytest.raises(QueryError):
+            normalize_offset(bad)
