@@ -411,3 +411,4 @@
 [2026-06-03T13:30:33] Add experiment comparison dashboard API
 [2026-06-03T20:35:39] Fix drift detection threshold calculation bug
 [2026-06-03T14:53:45] Implement multi-tenant experiment isolation
+[2026-06-03T12:48:19] Add MLflow experiment wrapper with tags support

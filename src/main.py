@@ -374,3 +374,5 @@ if __name__ == '__main__':
 # Implement A/B testing framework for models [2026-06-01T17:13:02]
 
 # WIP: setting up PostgreSQL backend storage [2026-06-02T17:26:16]
+
+# Add MLflow experiment wrapper with tags support [2026-06-03T12:48:19]
