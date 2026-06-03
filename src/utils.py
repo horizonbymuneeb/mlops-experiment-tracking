@@ -237,3 +237,5 @@ def format_number(n: int) -> str:
 # WIP: setting up PostgreSQL backend storage [2026-05-22T19:31:07]
 
 # Implement A/B testing framework for models [2026-05-28T15:07:03]
+
+# Add experiment comparison dashboard API [2026-06-03T13:30:33]
