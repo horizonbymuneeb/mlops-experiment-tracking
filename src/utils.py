@@ -243,3 +243,5 @@ def format_number(n: int) -> str:
 # Fix drift detection threshold calculation bug [2026-06-03T20:35:39]
 
 # Implement multi-tenant experiment isolation [2026-06-03T14:53:45]
+
+# Fix memory leak in long-running tracker service [2026-06-04T17:00:35]
