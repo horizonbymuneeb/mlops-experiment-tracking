@@ -119,3 +119,103 @@ def test_log_metrics_auto_step_advances(tracker):
     run.log_metrics({"loss": 0.5})
     run.log_metrics({"loss": 0.4})
     assert run.metric_series("loss") == [(0, 0.5), (1, 0.4)]
+
+
+def test_log_artifact_bytes_and_read_back(tracker):
+    run = tracker.start_run("r")
+    record = run.log_artifact(b"hello world", name="notes.txt")
+    assert record.name == "notes.txt"
+    assert record.size_bytes == 11
+    assert record.media_type == "text/plain"
+    assert run.artifact_bytes("notes.txt") == b"hello world"
+    assert run.artifacts()[0].digest == record.digest
+
+
+def test_log_artifact_file_dedups_on_disk(tracker, tmp_path):
+    source = tmp_path / "model.bin"
+    source.write_bytes(b"weights" * 100)
+    run_a = tracker.start_run("a")
+    run_b = tracker.start_run("b")
+    ref_a = run_a.log_artifact(source)
+    ref_b = run_b.log_artifact(source)
+    assert ref_a.digest == ref_b.digest
+    assert ref_a.name == "model.bin"
+    assert len(tracker.store.list_objects()) == 1
+    assert run_b.artifact_bytes("model.bin") == source.read_bytes()
+
+
+def test_log_artifact_overwrites_same_name(tracker):
+    run = tracker.start_run("r")
+    run.log_artifact(b"first", name="x.txt")
+    run.log_artifact(b"second", name="x.txt")
+    artifacts = run.artifacts()
+    assert len(artifacts) == 1
+    assert run.artifact_bytes("x.txt") == b"second"
+
+
+def test_missing_artifact_name_raises(tracker):
+    run = tracker.start_run("r")
+    with pytest.raises(RunNotFoundError):
+        run.artifact_bytes("nope")
+
+
+def test_tags_are_idempotent(tracker):
+    run = tracker.start_run("r")
+    assert run.add_tag("nightly") is True
+    assert run.add_tag("nightly") is False
+    assert run.tags() == ["nightly"]
+    assert run.remove_tag("nightly") is True
+    assert run.remove_tag("nightly") is False
+    assert run.tags() == []
+
+
+def test_add_tag_rejects_blank(tracker):
+    run = tracker.start_run("r")
+    with pytest.raises(ValueError, match="tag"):
+        run.add_tag("  ")
+
+
+def test_finish_sets_terminal_status(tracker):
+    run = tracker.start_run("r")
+    record = run.finish("finished")
+    assert record.status == "finished"
+    assert record.finished_at is not None
+    assert run.status == "finished"
+    assert run.duration_seconds is not None
+
+
+def test_finish_rejects_unknown_status(tracker):
+    run = tracker.start_run("r")
+    with pytest.raises(ValueError, match="finish"):
+        run.finish("done")
+
+
+def test_double_finish_raises(tracker):
+    run = tracker.start_run("r")
+    run.finish()
+    with pytest.raises(RunStateError, match="already finished"):
+        run.finish()
+
+
+def test_fail_appends_reason_to_notes(tracker):
+    run = tracker.start_run("r")
+    run.fail("diverged at step 10")
+    assert run.status == "failed"
+    assert "diverged at step 10" in (run.notes or "")
+
+
+def test_fail_appends_to_existing_notes(tracker):
+    run = tracker.start_run("r", notes="first")
+    run.fail("second")
+    assert run.notes == "first\nsecond"
+
+
+def test_reopen_clears_finished_at_and_counts(tracker):
+    run = tracker.start_run("r")
+    run.log_metric("loss", 0.5)
+    run.finish()
+    record = run.reopen()
+    assert record.status == "running"
+    assert record.finished_at is None
+    assert record.resumed_count == 1
+    assert run.log_metric("loss", 0.4) == 1
