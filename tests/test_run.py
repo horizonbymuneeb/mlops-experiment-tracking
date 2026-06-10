@@ -219,3 +219,74 @@ def test_reopen_clears_finished_at_and_counts(tracker):
     assert record.finished_at is None
     assert record.resumed_count == 1
     assert run.log_metric("loss", 0.4) == 1
+
+
+def test_reopen_running_run_raises(tracker):
+    run = tracker.start_run("r")
+    with pytest.raises(RunStateError, match="already running"):
+        run.reopen()
+
+
+def test_reopen_respects_config(tmp_path):
+    from tracker.config import TrackerConfig
+    from tracker.db import Database
+    from tracker.schema import ensure_schema
+
+    config = TrackerConfig.from_mapping({"runs": {"allow_reopen": False, "default_notes": ""}})
+    tracker = Tracker(config=config, db_path=tmp_path / "t.db", artifact_dir=tmp_path / "art")
+    run = tracker.start_run("r")
+    run.finish()
+    with pytest.raises(RunStateError, match="allow_reopen"):
+        run.reopen()
+
+
+def test_resume_run_reopens_finished(tracker):
+    run = tracker.start_run("r")
+    run.finish()
+    resumed = tracker.resume_run(run.id)
+    assert resumed.status == "running"
+    assert resumed.refresh().resumed_count == 1
+
+
+def test_resume_run_running_is_noop(tracker):
+    run = tracker.start_run("r")
+    resumed = tracker.resume_run(run.id)
+    assert resumed.id == run.id
+    assert resumed.refresh().resumed_count == 0
+
+
+def test_context_manager_finishes_on_success(tracker):
+    with tracker.run("ok") as run:
+        run.log_metric("loss", 0.1)
+        run_id = run.id
+    assert tracker.get_run(run_id).status == "finished"
+
+
+def test_context_manager_marks_failed_on_exception(tracker):
+    with pytest.raises(ZeroDivisionError):
+        with tracker.run("bad") as run:
+            run_id = run.id
+            1 / 0
+    record = tracker.get_run(run_id).refresh()
+    assert record.status == "failed"
+    assert "ZeroDivisionError" in (record.notes or "")
+
+
+def test_context_manager_does_not_double_finish(tracker):
+    with tracker.run("early") as run:
+        run.finish("killed")
+    assert tracker.get_run(run.id).status == "killed"
+
+
+def test_get_run_by_name_and_missing(tracker):
+    tracker.start_run("named")
+    assert tracker.get_run("named").name == "named"
+    with pytest.raises(RunNotFoundError, match="no run named"):
+        tracker.get_run("ghost")
+    with pytest.raises(RunNotFoundError, match="does not exist"):
+        tracker.get_run(9999)
+
+
+def test_get_run_rejects_bool(tracker):
+    with pytest.raises(TypeError):
+        tracker.get_run(True)
