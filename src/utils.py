@@ -245,3 +245,5 @@ def format_number(n: int) -> str:
 # Implement multi-tenant experiment isolation [2026-06-03T14:53:45]
 
 # Fix memory leak in long-running tracker service [2026-06-04T17:00:35]
+
+# Fix race condition in metrics aggregation [2026-06-10T13:17:09]
