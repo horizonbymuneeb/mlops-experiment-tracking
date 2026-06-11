@@ -150,3 +150,38 @@ def test_drop_all_resets_the_database(conn):
     drop_all(conn)
     assert current_version(conn) == 0
     assert not (table_names(conn) & set(TABLE_NAMES))
+
+
+def test_foreign_keys_cascade_params(conn):
+    ensure_schema(conn)
+    conn.execute(
+        "INSERT INTO runs (name, status, started_at) VALUES ('a', 'running', '2026-01-01T00:00:00.000000Z')"
+    )
+    run_id = conn.execute("SELECT id FROM runs").fetchone()[0]
+    conn.execute(
+        "INSERT INTO params (run_id, key, value, value_type) VALUES (?, 'lr', '0.1', 'float')",
+        (run_id,),
+    )
+    conn.execute("DELETE FROM runs WHERE id = ?", (run_id,))
+    assert conn.execute("SELECT COUNT(*) FROM params").fetchone()[0] == 0
+
+
+def test_status_check_constraint(conn):
+    ensure_schema(conn)
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute(
+            "INSERT INTO runs (name, status, started_at) VALUES ('a', 'exploded', '2026-01-01T00:00:00.000000Z')"
+        )
+
+
+def test_init_database_creates_the_file(tmp_path):
+    path = tmp_path / "nested" / "dir" / "tracker.db"
+    db = init_database(path)
+    assert path.exists()
+    assert db.table_counts()["runs"] == 0
+
+
+def test_statements_for_flattens_versions():
+    statements = statements_for((1, 2))
+    assert statements[: len(MIGRATION_1)] == list(MIGRATION_1)
+    assert len(statements) > len(MIGRATION_1)
