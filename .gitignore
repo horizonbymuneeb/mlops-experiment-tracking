@@ -1,0 +1,20 @@
+# AI assistant meta-files (blocked)
+.cursorrules
+.agents.md
+.windsurfrules
+.github/copilot
+
+# Python/ML
+__pycache__/
+*.pyc
+.env
+venv/
+*.log
+.ipynb_checkpoints/
+models/*.pt
+models/*.pth
+data/raw/
+data/processed/
+*.egg-info/
+dist/
+build/

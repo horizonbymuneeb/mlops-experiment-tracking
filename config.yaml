@@ -1,0 +1,22 @@
+project:
+  name: mlops-experiment-tracking
+  version: 0.1.0
+  description: "AI/ML Production Project"
+
+data:
+  path: ./data
+  processed: ./data/processed
+  
+model:
+  save_dir: ./models
+  checkpoint_freq: 10
+
+training:
+  batch_size: 32
+  epochs: 100
+  learning_rate: 0.001
+  device: cuda
+  
+logging:
+  level: INFO
+  log_file: ./logs/app.log
