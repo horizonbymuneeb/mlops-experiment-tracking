@@ -1,382 +1,190 @@
-#!usr/bin/env python3
-"""Main module for production mlops-experiment-tracking."""
 import torch
 import torch.nn as nn
 import numpy as np
-import pandas as pd
-from pathlib import Path
+import random
 import json
-import yaml
-from typing import Dict, List, Optional, Tuple
 import logging
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class Config:
-    """Configuration manager."""
-    
-    def __init__(self, config_path: str):
-        self.config_path = config_path
-        self.data = self._load()
-    
-    def _load(self) -> Dict:
-        with open(self.config_path, 'r') as f:
-            return yaml.safe_load(f)
-    
-    def get(self, key: str, default=None):
-        keys = key.split('.')
-        value = self.data
-        for k in keys:
-            value = value.get(k, default)
-            if value is None:
-                return default
-        return value
 
-
-class BaseModel(nn.Module):
-    """Base model class with training and presserving functionality."""
-    
-    def __init__(self, config: Config):
-        super().__init__()
-        self.config = config
-        self.device = torch.device(config.get('training.device', 'cpu'))
-        self._setup_model()
-    
-    def _setup_model(self):
-        """Override in subclass to define model architecture."""
-        pass
-    
-    def fit(self, dataset, epochs: int = 100):
-        """Train the model on given dataset."""
-        self.to(self.device)
+class ProductionModel(nn.Module):
+    def __init__(self, input_dim: int = 784, hidden_dims: List[int] = [256, 128],
+                 num_classes: int = 10, dropout: float = 0.2):
+        super(ProductionModel, self).__init__()
+        self.input_dim = input_dim
+        self.num_classes = num_classes
         
-        optimizer = torch.optim.Adam(
-            self.parameters(),
-            lr=self.config.get('training.learning_rate', 0.001)
-        )
-        criterion = nn.CrossEntropyLoss()
+        # Build layers dynamically
+        layers = []
+        prev_dim = input_dim
+        for h_dim in hidden_dims:
+            layers.append(nn.Linear(prev_dim, h_dim))
+            layers.append(nn.BatchNorm1d(h_dim))
+            layers.append(nn.ReLU(inplace=True))
+            layers.append(nn.Dropout(dropout))
+            prev_dim = h_dim
         
-        logger.info(f"Training for {epochs} epochs")
+        layers.append(nn.Linear(prev_dim, num_classes))
+        self.network = nn.Sequential(*layers)
         
-        for epoch in range(epochs):
-            self.train()
-            total_loss = 0.0
-            correct = 0
-            total = 0
-            
-            for batch_idx, (data, target) in enumerate(dataset):
-                data, target = data.to(self.device), target.to(self.device)
-                
-                optimizer.zero_grad()
-                output = self(data)
-                loss = criterion(output, target)
-                loss.backward()
-                optimizer.step()
-                
-                total_loss += loss.item()
-                pred = output.argmax(dim=1)
-                correct += pred.eq(target).sum().item()
-                total += target.size(0)
-            
-            accuracy = correct / total
-            logger.info(f"Epoch {epoch+1}/{epochs}: "
-                       f"Loss={total_loss:.4f}, Accuracy={accuracy:.4f}")
+        # Initialize weights
+        self._initialize_weights()
+        
+        self.config = {
+            'input_dim': input_dim,
+            'hidden_dims': hidden_dims,
+            'num_classes': num_classes,
+            'dropout': dropout
+        }
+    
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm1d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+    
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.network(x)
     
     def predict(self, x: torch.Tensor) -> torch.Tensor:
-        """Make predictions on input data."""
         self.eval()
         with torch.no_grad():
-            return self(x.to(self.device))
+            return torch.softmax(self(x), dim=1)
     
     def save(self, path: str):
-        """Save model checkpoint."""
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         torch.save({
-            'config': self.config.data,
-            'state_dict': self.state_dict()
+            'config': self.config,
+            'state_dict': self.state_dict(),
+            'network': self.network
         }, path)
         logger.info(f"Model saved to {path}")
     
     @classmethod
     def load(cls, path: str):
-        """Load model from checkpoint."""
         checkpoint = torch.load(path, map_location='cpu')
-        config = Config(checkpoint['config'])
-        model = cls(config)
+        model = cls(**checkpoint['config'])
         model.load_state_dict(checkpoint['state_dict'])
         return model
 
-
-class DataLoader:
-    """Generic data loader with preprocessing."""
+class Trainer:
+    def __init__(self, model: nn.Module, device: str = 'cuda' if torch.cuda.is_available() else 'cpu',
+                 lr: float = 0.001, weight_decay: float = 1e-4):
+        self.model = model.to(device)
+        self.device = device
+        self.optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, patience=5)
+        self.criterion = nn.CrossEntropyLoss()
+        self.history = {'train_loss': [], 'val_loss': [], 'val_acc': []}
     
-    def __init__(self, source: str, batch_size: int = 32,
-                 shuffle: bool = True, num_workers: int = 4):
-        self.source = source
-        self.batch_size = batch_size
-        self.shuffle = shuffle
-        self.num_workers = num_workers
-        self.data = None
-        self.labels = None
+    def train_epoch(self, train_loader):
+        self.model.train()
+        total_loss = 0.0
+        for batch_idx, (data, target) in enumerate(train_loader):
+            data, target = data.to(self.device), target.to(self.device)
+            self.optimizer.zero_grad()
+            output = self.model(data)
+            loss = self.criterion(output, target)
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
+            self.optimizer.step()
+            total_loss += loss.item()
+        return total_loss / len(train_loader)
     
-    def load(self):
-        """Load data from source."""
-        # Load from CSV/Parquet/etc
-        if Path(self.source).suffix == '.csv':
-            df = pd.read_csv(self.source)
-        elif Path(self.source).suffix == '.parquet':
-            df = pd.read_parquet(self.source)
-        else:
-            raise ValueError(f"Unsupported file format: {self.source}")
-        
-        self.data = df.drop('target', axis=1).values
-        self.labels = df['target'].values
-        
-        return self
+    def validate(self, val_loader):
+        self.model.eval()
+        val_loss = 0.0
+        correct = 0
+        total = 0
+        with torch.no_grad():
+            for data, target in val_loader:
+                data, target = data.to(self.device), target.to(self.device)
+                output = self.model(data)
+                val_loss += self.criterion(output, target).item()
+                pred = output.argmax(dim=1)
+                correct += pred.eq(target).sum().item()
+                total += target.size(0)
+        return val_loss / len(val_loader), 100. * correct / total
     
-    def __iter__(self):
-        """Iterator yielding batches."""
-        if self.data is None:
-            self.load()
+    def fit(self, train_loader, val_loader, epochs: int = 100, patience: int = 10):
+        logger.info(f"Training for {epochs} epochs with patience {patience}")
+        best_loss = float('inf')
+        patience_counter = 0
         
-        indices = np.arange(len(self.data))
-        if self.shuffle:
-            np.random.shuffle(indices)
+        for epoch in range(1, epochs + 1):
+            train_loss = self.train_epoch(train_loader)
+            val_loss, val_acc = self.validate(val_loader)
+            
+            self.history['train_loss'].append(train_loss)
+            self.history['val_loss'].append(val_loss)
+            self.history['val_acc'].append(val_acc)
+            
+            self.scheduler.step(val_loss)
+            
+            if val_loss < best_loss:
+                best_loss = val_loss
+                patience_counter = 0
+                # Save best model
+                self.model.save('models/best_model.pt')
+            else:
+                patience_counter += 1
+            
+            if epoch % 10 == 0:
+                logger.info(f"Epoch {epoch}/{epochs} | "
+                          f"Train Loss: {train_loss:.4f} | "
+                          f"Val Loss: {val_loss:.4f} | "
+                          f"Val Acc: {val_acc:.2f}%")
+            
+            if patience_counter >= patience:
+                logger.info(f"Early stopping at epoch {epoch}")
+                break
         
-        for i in range(0, len(indices), self.batch_size):
-            batch_idx = indices[i:i + self.batch_size]
-            yield (torch.FloatTensor(self.data[batch_idx]),
-                   torch.LongTensor(self.labels[batch_idx]))
+        return self.history
 
 
 def main():
-    """Main entry point."""
-    logger.info("Starting mlops-experiment-tracking pipeline")
+    logger.info("Starting training pipeline")
     
-    # Load configuration
-    config = Config('config.yaml')
+    # Set all seeds for reproducibility
+    seed = 42
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+    
+    # Example: simple dataset (replace with real data)
+    from torch.utils.data import TensorDataset, DataLoader
+    
+    # Create synthetic dataset
+    n_samples = 1000
+    X = torch.randn(n_samples, 784)
+    y = torch.randint(0, 10, (n_samples,))
+    
+    train_dataset = TensorDataset(X, y)
+    val_dataset = TensorDataset(X, y)
+    
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=32)
     
     # Initialize model
-    model = BaseModel(config)
-    
-    # Load data
-    data_loader = DataLoader(config.get('data.path'))
+    model = ProductionModel(input_dim=784, hidden_dims=[512, 256, 128], num_classes=10)
     
     # Train
-    model.fit(data_loader)
+    trainer = Trainer(model, lr=0.001)
+    history = trainer.fit(train_loader, val_loader, epochs=50, patience=10)
     
-    # Save
-    model.save('models/model.pt')
+    logger.info("Training completed successfully")
     
-    logger.info("Pipeline completed successfully")
-
+    return history
 
 if __name__ == '__main__':
     main()
-
-# Implement A/B testing framework for models [2025-06-12T19:25:22]
-
-# Implement multi-tenant experiment isolation [2025-06-12T15:25:25]
-
-# Implement multi-tenant experiment isolation [2025-06-16T14:35:30]
-
-# Update Docker compose for production deploy [2025-06-20T18:59:19]
-
-# Fix memory leak in long-running tracker service [2025-06-24T14:12:08]
-
-# Add cost tracking per experiment run [2025-07-01T19:21:26]
-
-# Implement multi-tenant experiment isolation [2025-07-07T19:59:09]
-
-# Update Docker compose for production deploy [2025-07-09T14:47:16]
-
-# Implement A/B testing framework for models [2025-07-11T17:48:59]
-
-# Fix Redis connection pool timeout handling [2025-07-14T19:21:02]
-
-# Implement automated retraining trigger logic [2025-07-21T15:16:16]
-
-# Add monitoring alert webhooks for Slack [2025-07-22T12:46:11]
-
-# Add model versioning and staging pipeline [2025-07-22T14:36:52]
-
-# Implement automated retraining trigger logic [2025-07-25T11:33:35]
-
-# Update FastAPI prediction endpoint for v2 [2025-07-29T17:22:49]
-
-# Implement automated retraining trigger logic [2025-07-29T19:04:45]
-
-# Add experiment comparison dashboard API [2025-07-31T20:18:24]
-
-# Implement model registry with stage transitions [2025-08-07T13:15:00]
-
-# Fix race condition in metrics aggregation [2025-08-11T12:41:04]
-
-# WIP: setting up PostgreSQL backend storage [2025-08-12T20:45:49]
-
-# Add MLflow experiment wrapper with tags support [2025-08-17T18:21:40]
-
-# Update FastAPI prediction endpoint for v2 [2025-08-17T17:40:41]
-
-# Implement model registry with stage transitions [2025-08-22T20:30:35]
-
-# Add cost tracking per experiment run [2025-08-22T19:15:30]
-
-# WIP: setting up PostgreSQL backend storage [2025-08-28T10:06:44]
-
-# Update Docker compose for production deploy [2025-08-28T13:06:36]
-
-# Update REST API documentation with examples [2025-09-05T10:36:45]
-
-# Add experiment comparison dashboard API [2025-09-11T13:50:15]
-
-# Fix drift detection threshold calculation bug [2025-09-12T09:20:57]
-
-# Implement Prometheus metrics collector service [2025-09-15T12:49:50]
-
-# Implement multi-tenant experiment isolation [2025-09-15T12:18:12]
-
-# Implement A/B testing framework for models [2025-09-16T18:04:46]
-
-# Add monitoring alert webhooks for Slack [2025-09-29T11:00:21]
-
-# Add model versioning and staging pipeline [2025-09-30T14:27:50]
-
-# Add experiment comparison dashboard API [2025-10-07T15:27:59]
-
-# Update FastAPI prediction endpoint for v2 [2025-10-08T17:13:35]
-
-# Implement Prometheus metrics collector service [2025-10-18T19:38:48]
-
-# Add artifact logging for model serialization [2025-10-24T12:39:16]
-
-# Update FastAPI prediction endpoint for v2 [2025-10-28T17:28:45]
-
-# Implement multi-tenant experiment isolation [2025-11-04T18:18:04]
-
-# Update FastAPI prediction endpoint for v2 [2025-11-04T16:35:41]
-
-# Update REST API documentation with examples [2025-11-05T17:12:59]
-
-# Update Docker compose for production deploy [2025-11-07T13:08:53]
-
-# Update FastAPI prediction endpoint for v2 [2025-11-11T10:02:26]
-
-# Fix race condition in metrics aggregation [2025-11-12T11:11:54]
-
-# Fix Redis connection pool timeout handling [2025-11-12T20:31:29]
-
-# WIP: setting up PostgreSQL backend storage [2025-11-14T13:56:12]
-
-# Add monitoring alert webhooks for Slack [2025-11-20T14:02:06]
-
-# WIP: tuning Prometheus scrape intervals [2025-11-21T12:22:38]
-
-# Add experiment comparison dashboard API [2025-11-26T13:55:03]
-
-# Add cost tracking per experiment run [2025-12-08T14:46:38]
-
-# WIP: tuning Prometheus scrape intervals [2025-12-10T09:28:55]
-
-# Update FastAPI prediction endpoint for v2 [2025-12-15T20:14:25]
-
-# Add monitoring alert webhooks for Slack [2025-12-17T18:50:22]
-
-# Update FastAPI prediction endpoint for v2 [2025-12-17T19:38:32]
-
-# Update Docker compose for production deploy [2025-12-31T20:53:00]
-
-# Implement multi-tenant experiment isolation [2026-01-02T12:28:36]
-
-# Implement automated retraining trigger logic [2026-01-03T17:14:37]
-
-# Implement multi-tenant experiment isolation [2026-01-08T13:23:45]
-
-# WIP: tuning Prometheus scrape intervals [2026-01-14T14:10:46]
-
-# WIP: setting up PostgreSQL backend storage [2026-01-22T13:50:58]
-
-# Implement model registry with stage transitions [2026-01-26T16:29:14]
-
-# Add experiment comparison dashboard API [2026-02-01T14:03:14]
-
-# Add model versioning and staging pipeline [2026-02-03T20:59:30]
-
-# Implement model registry with stage transitions [2026-02-04T19:02:40]
-
-# Fix race condition in metrics aggregation [2026-02-06T09:36:01]
-
-# Implement automated retraining trigger logic [2026-02-11T18:55:29]
-
-# Add MLflow experiment wrapper with tags support [2026-02-16T18:03:03]
-
-# Fix race condition in metrics aggregation [2026-02-16T18:52:05]
-
-# Update Docker compose for production deploy [2026-02-17T13:15:18]
-
-# Update FastAPI prediction endpoint for v2 [2026-02-20T16:46:00]
-
-# Fix Redis connection pool timeout handling [2026-02-26T12:35:09]
-
-# Add cost tracking per experiment run [2026-03-01T13:16:01]
-
-# WIP: setting up PostgreSQL backend storage [2026-03-03T09:45:53]
-
-# Add experiment comparison dashboard API [2026-03-05T15:42:38]
-
-# Implement Prometheus metrics collector service [2026-03-06T15:38:04]
-
-# Fix memory leak in long-running tracker service [2026-03-08T14:38:30]
-
-# WIP: setting up PostgreSQL backend storage [2026-03-09T12:50:41]
-
-# Fix drift detection threshold calculation bug [2026-03-13T14:55:39]
-
-# Fix race condition in metrics aggregation [2026-03-22T13:07:36]
-
-# WIP: setting up PostgreSQL backend storage [2026-03-25T13:12:58]
-
-# Update REST API documentation with examples [2026-03-25T17:01:58]
-
-# Add monitoring alert webhooks for Slack [2026-03-27T18:29:18]
-
-# Implement A/B testing framework for models [2026-03-31T11:12:27]
-
-# Implement multi-tenant experiment isolation [2026-04-06T18:43:39]
-
-# Add MLflow experiment wrapper with tags support [2026-04-09T09:06:57]
-
-# WIP: tuning Prometheus scrape intervals [2026-04-09T12:06:15]
-
-# Update FastAPI prediction endpoint for v2 [2026-04-12T09:38:32]
-
-# Add experiment comparison dashboard API [2026-04-12T10:10:36]
-
-# Fix race condition in metrics aggregation [2026-04-15T13:35:13]
-
-# Fix Redis connection pool timeout handling [2026-04-21T14:50:55]
-
-# Add model versioning and staging pipeline [2026-04-28T11:16:54]
-
-# Add monitoring alert webhooks for Slack [2026-05-02T20:29:18]
-
-# Implement automated retraining trigger logic [2026-05-04T20:39:36]
-
-# Add experiment comparison dashboard API [2026-05-22T14:10:45]
-
-# WIP: tuning Prometheus scrape intervals [2026-05-22T18:08:39]
-
-# Fix memory leak in long-running tracker service [2026-05-27T16:18:49]
-
-# Update FastAPI prediction endpoint for v2 [2026-05-29T15:43:22]
-
-# Implement A/B testing framework for models [2026-06-01T17:13:02]
-
-# WIP: setting up PostgreSQL backend storage [2026-06-02T17:26:16]
-
-# Add MLflow experiment wrapper with tags support [2026-06-03T12:48:19]
-
-# WIP: setting up PostgreSQL backend storage [2026-06-11T17:16:03]
-
-# Implement model registry with stage transitions [2026-06-11T18:40:00]
