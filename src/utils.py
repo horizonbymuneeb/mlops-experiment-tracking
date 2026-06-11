@@ -247,3 +247,5 @@ def format_number(n: int) -> str:
 # Fix memory leak in long-running tracker service [2026-06-04T17:00:35]
 
 # Fix race condition in metrics aggregation [2026-06-10T13:17:09]
+
+# Update FastAPI prediction endpoint for v2 [2026-06-11T20:31:22]
