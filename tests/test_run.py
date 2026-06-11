@@ -290,3 +290,80 @@ def test_get_run_by_name_and_missing(tracker):
 def test_get_run_rejects_bool(tracker):
     with pytest.raises(TypeError):
         tracker.get_run(True)
+
+
+def test_set_notes(tracker):
+    run = tracker.start_run("r")
+    run.set_notes("updated")
+    assert run.notes == "updated"
+    assert tracker.get_run(run.id).notes == "updated"
+
+
+def test_summary_and_to_dict(tracker):
+    run = tracker.start_run("r", params={"lr": 0.1})
+    run.log_metric("loss", 0.5, step=0)
+    run.log_metric("loss", 0.4, step=1)
+    run.log_artifact(b"x", name="x.bin")
+    summary = run.summary()
+    assert summary.latest_metrics == {"loss": 0.4}
+    assert summary.metric_counts == {"loss": 2}
+    assert summary.artifact_count == 1
+    payload = run.to_dict()
+    assert len(payload["metrics"]) == 2
+    assert payload["artifacts"][0]["name"] == "x.bin"
+
+
+def test_delete_run_cascades(tracker):
+    run = tracker.start_run("r", params={"lr": 0.1}, tags=["t"])
+    run.log_metric("loss", 0.5)
+    assert tracker.delete_run(run.id) is True
+    assert tracker.delete_run(run.id) is False
+    counts = tracker.counts()
+    assert counts["runs"] == 0
+    assert counts["params"] == 0 and counts["metrics"] == 0 and counts["tags"] == 0
+
+
+def test_gc_artifacts_after_delete(tracker):
+    run = tracker.start_run("r")
+    record = run.log_artifact(b"orphan me")
+    assert tracker.store.exists(record.digest) is True
+    tracker.delete_run(run.id)
+    result = tracker.gc_artifacts()
+    assert result["removed"] == [record.digest]
+    assert tracker.store.exists(record.digest) is False
+
+
+def test_gc_artifacts_keeps_live_blobs(tracker):
+    run = tracker.start_run("r")
+    record = run.log_artifact(b"keep me")
+    result = tracker.gc_artifacts()
+    assert result["removed_count"] == 0
+    assert tracker.store.exists(record.digest) is True
+
+
+def test_find_runs_and_limits(tracker):
+    tracker.start_run("a")
+    tracker.start_run("b")
+    tracker.start_run("a")
+    assert [run.name for run in tracker.find_runs(name="a")] == ["a", "a"]
+    assert len(tracker.find_runs()) == 3
+    assert len(tracker.find_runs(limit=1)) == 1
+
+
+def test_finish_run_by_reference(tracker):
+    run = tracker.start_run("r")
+    record = tracker.finish_run("r", "killed")
+    assert record.status == "killed"
+    assert run.refresh().status == "killed"
+
+
+def test_tracker_context_manager(tracker):
+    with Tracker(db_path=tracker.db.path, artifact_dir=tracker.store.root) as inner:
+        inner.start_run("nested")
+    assert tracker.counts()["runs"] == 1
+
+
+def test_run_repr(tracker):
+    run = tracker.start_run("repr-run")
+    assert "repr-run" in repr(run)
+    assert "running" in repr(run)
