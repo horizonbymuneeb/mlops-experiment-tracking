@@ -414,3 +414,4 @@
 [2026-06-03T12:48:19] Add MLflow experiment wrapper with tags support
 [2026-06-04T17:00:35] Fix memory leak in long-running tracker service
 [2026-06-10T13:17:09] Fix race condition in metrics aggregation
+[2026-06-11T17:16:03] WIP: setting up PostgreSQL backend storage
